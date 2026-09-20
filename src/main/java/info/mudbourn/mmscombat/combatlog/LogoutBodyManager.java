@@ -1,7 +1,6 @@
 package info.mudbourn.mmscombat.combatlog;
 
 import info.mudbourn.mmscombat.MmsCombat;
-import info.mudbourn.mmscombat.config.CombatConfig;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -16,12 +15,15 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.Containers;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.EquipmentSlot;
-import net.minecraft.world.entity.decoration.ArmorStand;
+import net.minecraft.world.entity.ai.attributes.AttributeInstance;
+import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.decoration.Mannequin;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.Level;
+import net.minecraft.world.item.component.ResolvableProfile;
 
-// The vulnerable logout body: a killable armor-stand proxy left when a flagged player logs out, holding a snapshot of their gear. Killed in time, the snapshot drops and the player loses it on next login; left to expire, it vanishes and the player keeps everything.
+// The vulnerable logout body: a killable mannequin left when a flagged player logs out, wearing their skin, size, and gear and holding a snapshot of their inventory. Killed in time, the snapshot drops and the player loses it on next login; left to expire, it vanishes and the player keeps everything.
 public final class LogoutBodyManager {
 
     private static final String BODY_TAG = "mms_combat_logout_body";
@@ -36,19 +38,19 @@ public final class LogoutBodyManager {
 
     private final Map<UUID, Body> bodies = new HashMap<>();
     private final Set<UUID> pendingDeaths = new HashSet<>();
-    private final Set<UUID> liveStandIds = new HashSet<>();
+    private final Set<UUID> liveBodyIds = new HashSet<>();
 
     // Discards any tagged body that is not one of this session's live bodies, so a body orphaned by a restart vanishes the moment its chunk loads instead of lingering.
     public void discardIfOrphan(Entity entity) {
-        if (entity instanceof ArmorStand stand
-            && stand.getTags().contains(BODY_TAG)
-            && !liveStandIds.contains(stand.getUUID())) {
-            stand.discard();
+        if (entity instanceof Mannequin mannequin
+            && mannequin.getTags().contains(BODY_TAG)
+            && !liveBodyIds.contains(mannequin.getUUID())) {
+            mannequin.discard();
         }
     }
 
-    // Snapshots the disconnecting player and spawns their body where they stood.
-    public void createBody(ServerPlayer player, int lingerTicks) {
+    // Snapshots the disconnecting player and spawns a mannequin of them where they stood; a persistent body never times out and stands until it is killed or the player returns.
+    public void createBody(ServerPlayer player, int lingerTicks, boolean persistent) {
         if (!(player.level() instanceof ServerLevel level)) {
             return;
         }
@@ -61,29 +63,49 @@ public final class LogoutBodyManager {
             }
         }
 
-        ArmorStand stand = new ArmorStand(level, player.getX(), player.getY(), player.getZ());
-        stand.setYRot(player.getYRot());
-        stand.setNoGravity(false);
-        stand.setInvulnerable(false);
-        stand.setCustomName(Component.literal(player.getName().getString()));
-        stand.setCustomNameVisible(true);
-        stand.addTag(BODY_TAG);
+        Mannequin body = new Mannequin(EntityType.MANNEQUIN, level);
+        float yaw = player.getYRot();
+        body.snapTo(player.getX(), player.getY(), player.getZ(), yaw, player.getXRot());
+        body.setYBodyRot(yaw);
+        body.setYHeadRot(player.getYHeadRot());
+        body.setProfile(ResolvableProfile.createResolved(player.getGameProfile()));
+        body.setImmovable(true);
+        body.setNoGravity(true);
+        body.setCustomName(Component.literal(player.getName().getString()));
+        body.setCustomNameVisible(true);
+        body.addTag(BODY_TAG);
         for (EquipmentSlot slot : VISIBLE_SLOTS) {
-            stand.setItemSlot(slot, player.getItemBySlot(slot).copy());
+            body.setItemSlot(slot, player.getItemBySlot(slot).copy());
         }
-        liveStandIds.add(stand.getUUID());
-        level.addFreshEntity(stand);
+        copyAttribute(player, body, Attributes.SCALE);
+        copyAttribute(player, body, Attributes.MAX_HEALTH);
+        body.refreshDimensions();
+        body.setHealth(player.getHealth());
+        liveBodyIds.add(body.getUUID());
+        level.addFreshEntity(body);
+        LogoutBodyEvents.CREATED.invoker().onCreated(player, body);
 
         long expiry = level.getGameTime() + lingerTicks;
         bodies.put(player.getUUID(), new Body(
-            stand.getUUID(),
+            body.getUUID(),
             snapshot,
             level.dimension().identifier().toString(),
             player.getX(),
             player.getY(),
             player.getZ(),
-            expiry));
-        MmsCombat.LOG.info("Logout body for {} spawned, linger {} ticks", player.getName().getString(), lingerTicks);
+            expiry,
+            persistent));
+        MmsCombat.LOG.info("Logout body for {} spawned, linger {} ticks, persistent {}",
+            player.getName().getString(), lingerTicks, persistent);
+    }
+
+    // Mirrors the player's effective value for an attribute onto the body's base value, so mod-driven size (Origins furs, say) and max health carry over.
+    private static void copyAttribute(ServerPlayer player, Mannequin body,
+                                      net.minecraft.core.Holder<net.minecraft.world.entity.ai.attributes.Attribute> attribute) {
+        AttributeInstance instance = body.getAttribute(attribute);
+        if (instance != null) {
+            instance.setBaseValue(player.getAttributeValue(attribute));
+        }
     }
 
     public void tick(MinecraftServer server) {
@@ -98,17 +120,17 @@ public final class LogoutBodyManager {
             if (level == null) {
                 continue;
             }
-            ArmorStand stand = level.getEntity(body.standId) instanceof ArmorStand found ? found : null;
-            if (stand == null || stand.isRemoved()) {
+            Mannequin mannequin = level.getEntity(body.bodyId) instanceof Mannequin found ? found : null;
+            if (mannequin == null || mannequin.isRemoved()) {
                 dropSnapshot(level, body);
                 pendingDeaths.add(entry.getKey());
-                liveStandIds.remove(body.standId);
+                liveBodyIds.remove(body.bodyId);
                 it.remove();
                 continue;
             }
-            if (level.getGameTime() >= body.expiry) {
-                stand.discard();
-                liveStandIds.remove(body.standId);
+            if (!body.persistent && level.getGameTime() >= body.expiry) {
+                mannequin.discard();
+                liveBodyIds.remove(body.bodyId);
                 it.remove();
             }
         }
@@ -118,10 +140,10 @@ public final class LogoutBodyManager {
     public void onReconnect(ServerPlayer player) {
         Body body = bodies.remove(player.getUUID());
         if (body != null) {
-            liveStandIds.remove(body.standId);
+            liveBodyIds.remove(body.bodyId);
             if (player.level() instanceof ServerLevel level
-                && level.getEntity(body.standId) instanceof ArmorStand stand) {
-                stand.discard();
+                && level.getEntity(body.bodyId) instanceof Mannequin mannequin) {
+                mannequin.discard();
             }
         }
         if (pendingDeaths.remove(player.getUUID())) {
@@ -131,10 +153,10 @@ public final class LogoutBodyManager {
     }
 
     private void dropSnapshot(ServerLevel level, Body body) {
-        ArmorStand stand = level.getEntity(body.standId) instanceof ArmorStand found ? found : null;
-        double x = stand != null ? stand.getX() : body.x;
-        double y = stand != null ? stand.getY() : body.y;
-        double z = stand != null ? stand.getZ() : body.z;
+        Mannequin mannequin = level.getEntity(body.bodyId) instanceof Mannequin found ? found : null;
+        double x = mannequin != null ? mannequin.getX() : body.x;
+        double y = mannequin != null ? mannequin.getY() : body.y;
+        double z = mannequin != null ? mannequin.getZ() : body.z;
         for (ItemStack stack : body.snapshot) {
             Containers.dropItemStack(level, x, y, z, stack);
         }
@@ -149,7 +171,7 @@ public final class LogoutBodyManager {
         return null;
     }
 
-    private record Body(UUID standId, List<ItemStack> snapshot, String dimension,
-                        double x, double y, double z, long expiry) {
+    private record Body(UUID bodyId, List<ItemStack> snapshot, String dimension,
+                        double x, double y, double z, long expiry, boolean persistent) {
     }
 }

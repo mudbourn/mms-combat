@@ -3,6 +3,7 @@
   "package": "info.mudbourn.mmscombat.zone.mixin",
   "compatibilityLevel": "JAVA_21",
   "mixins": [
+    "ExplosionShieldMixin",
     "NaturalSpawnerMixin"
   ],
   "injectors": {

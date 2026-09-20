@@ -6,10 +6,16 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
+import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
 import net.minecraft.world.Container;
 import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.MenuProvider;
@@ -17,8 +23,10 @@ import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.InterpolationHandler;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.ChestMenu;
 import net.minecraft.world.inventory.MenuType;
@@ -39,6 +47,13 @@ public class KillstreakCrateEntity extends Entity implements MenuProvider {
     private static final double MOVING_BACK = -1.7;
     private static final double WALK_SPEED = 0.12;
     private static final int ORPHAN_TICKS = 1200;
+    // The window the owner has to collect before the crate detonates.
+    private static final int LIFETIME_TICKS = 600;
+    // A blast that spares the owner and the terrain but punishes anyone else who crowds the drop.
+    private static final double EXPLOSION_RADIUS = 4.0;
+    private static final float EXPLOSION_DAMAGE = 12.0F;
+    // The invulnerability and heal window the owner gets the instant they collect.
+    private static final int COLLECT_BUFF_TICKS = 100;
     // Length of the fade-and-tween the crate plays on arrival and again before it is removed.
     public static final int ANIM_TICKS = 12;
 
@@ -54,6 +69,7 @@ public class KillstreakCrateEntity extends Entity implements MenuProvider {
     private int orphanAge;
     private int despawnTick = -1;
     private int clientDespawnAge;
+    private int lastShownSeconds = -1;
 
     public KillstreakCrateEntity(EntityType<? extends KillstreakCrateEntity> type, Level level) {
         super(type, level);
@@ -98,9 +114,16 @@ public class KillstreakCrateEntity extends Entity implements MenuProvider {
             return;
         }
         if (this.contents.isEmpty()) {
+            grantCollectBuffs();
             beginDespawn();
             return;
         }
+        if (this.tickCount >= LIFETIME_TICKS) {
+            explode();
+            this.discard();
+            return;
+        }
+        updateCountdown();
         Player target = this.owner == null ? null : this.level().getPlayerByUUID(this.owner);
         if (target == null) {
             if (++this.orphanAge > ORPHAN_TICKS) {
@@ -110,6 +133,55 @@ public class KillstreakCrateEntity extends Entity implements MenuProvider {
         }
         this.orphanAge = 0;
         followOwner(target);
+    }
+
+    // Grants the owner a brief invulnerability and heal the instant they clear the crate.
+    private void grantCollectBuffs() {
+        if (this.owner == null) {
+            return;
+        }
+        if (this.level().getPlayerByUUID(this.owner) instanceof ServerPlayer player) {
+            player.addEffect(new MobEffectInstance(MobEffects.RESISTANCE, COLLECT_BUFF_TICKS, 4, false, true, true));
+            player.addEffect(new MobEffectInstance(MobEffects.REGENERATION, COLLECT_BUFF_TICKS, 4, false, true, true));
+            player.addEffect(new MobEffectInstance(MobEffects.FIRE_RESISTANCE, COLLECT_BUFF_TICKS, 0, false, true, true));
+        }
+    }
+
+    // Shows the remaining seconds above the crate, refreshed only when the whole-second value changes.
+    private void updateCountdown() {
+        int secondsLeft = (int) Math.ceil((LIFETIME_TICKS - this.tickCount) / 20.0);
+        if (secondsLeft != this.lastShownSeconds) {
+            this.lastShownSeconds = secondsLeft;
+            this.setCustomName(Component.literal("Explodes in " + secondsLeft + "s"));
+            this.setCustomNameVisible(true);
+        }
+    }
+
+    // Detonates an uncollected crate: sound and particles, damage that falls off with distance to every nearby entity except the owner, and no block damage at all.
+    private void explode() {
+        if (!(this.level() instanceof ServerLevel level)) {
+            return;
+        }
+        Vec3 center = this.position();
+        level.playSound(null, center.x, center.y, center.z,
+            SoundEvents.GENERIC_EXPLODE, SoundSource.BLOCKS, 4.0F, 1.0F);
+        level.sendParticles(ParticleTypes.EXPLOSION_EMITTER, center.x, center.y, center.z, 1, 0.0, 0.0, 0.0, 0.0);
+        Player ownerPlayer = this.owner == null ? null : level.getPlayerByUUID(this.owner);
+        DamageSource source = level.damageSources().explosion(this, ownerPlayer);
+        AABB area = this.getBoundingBox().inflate(EXPLOSION_RADIUS);
+        for (LivingEntity victim : level.getEntitiesOfClass(LivingEntity.class, area)) {
+            if (this.owner != null && this.owner.equals(victim.getUUID())) {
+                continue;
+            }
+            double distance = Math.sqrt(victim.distanceToSqr(center));
+            if (distance > EXPLOSION_RADIUS) {
+                continue;
+            }
+            float damage = (float) (EXPLOSION_DAMAGE * (1.0 - distance / EXPLOSION_RADIUS));
+            if (damage > 0.0F) {
+                victim.hurtServer(level, source, damage);
+            }
+        }
     }
 
     // Flags the crate as leaving so the client fades and tweens it out, then discards it once the animation has played.
@@ -160,7 +232,8 @@ public class KillstreakCrateEntity extends Entity implements MenuProvider {
 
     @Override
     public Component getDisplayName() {
-        return Component.literal("Killstreak Crate");
+        Component custom = this.getCustomName();
+        return custom != null ? custom : Component.literal("Killstreak Crate");
     }
 
     public Container contents() {

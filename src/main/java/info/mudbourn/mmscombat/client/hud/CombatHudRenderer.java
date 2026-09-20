@@ -50,7 +50,9 @@ public final class CombatHudRenderer implements HudElement {
             SOURCE_SIZE,
             SOURCE_SIZE);
 
-        Component label = Component.literal(Integer.toString(CombatHudState.secondsLeft()) + "s");
+        Component label = CombatHudState.inZone()
+            ? Component.literal("In Combat Zone")
+            : Component.literal(Integer.toString(CombatHudState.secondsLeft()) + "s");
         int textX = iconX + ICON_SIZE + 4;
         int textY = iconY + ICON_SIZE / 2 - font.lineHeight / 2;
         context.drawString(font, label, textX, textY, TEXT_COLOR, true);

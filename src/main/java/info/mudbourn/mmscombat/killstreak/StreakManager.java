@@ -8,9 +8,16 @@ import java.util.Map;
 import java.util.UUID;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
+import net.minecraft.core.Holder;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.protocol.game.ClientboundSoundPacket;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvent;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.item.ItemStack;
 
 // Per-life kill tracking: a player-kills-player death advances the killer's streak, hitting a configured tier spawns a killstreak crate, and death or logout resets the count.
@@ -76,7 +83,7 @@ public final class StreakManager {
 
     private void awardTier(ServerPlayer player, int streak, StreakTier tier) {
         java.util.List<ItemStack> rewards = RewardPool.roll(tier, player);
-        player.sendSystemMessage(Component.literal(streak + " kill streak!"));
+        announceStreak(player, streak);
         if (rewards.isEmpty()) {
             return;
         }
@@ -86,6 +93,28 @@ public final class StreakManager {
         crate.setOwner(player.getUUID());
         crate.giveRewards(rewards);
         level.addFreshEntity(crate);
+    }
+
+    // Broadcasts the streak to everyone in chat and rolls a dragon growl out to every player, wherever they are.
+    private void announceStreak(ServerPlayer player, int streak) {
+        MinecraftServer server = player.getServer();
+        if (server == null) {
+            return;
+        }
+        Component message = Component.literal(player.getName().getString() + " is on a " + streak + " kill streak!");
+        Holder<SoundEvent> growl = BuiltInRegistries.SOUND_EVENT.wrapAsHolder(SoundEvents.ENDER_DRAGON_GROWL);
+        for (ServerPlayer viewer : server.getPlayerList().getPlayers()) {
+            viewer.sendSystemMessage(message);
+            viewer.connection.send(new ClientboundSoundPacket(
+                growl,
+                SoundSource.MASTER,
+                viewer.getX(),
+                viewer.getY(),
+                viewer.getZ(),
+                1.0F,
+                1.0F,
+                viewer.getRandom().nextLong()));
+        }
     }
 
     private StreakTier tierFor(int streak) {

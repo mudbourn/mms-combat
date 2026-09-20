@@ -9,6 +9,25 @@ base {
     archivesName = project.archives_base_name
 }
 
+// Named dev clients for the two-player streak test; separate run dirs so two clients do not collide on files or logs.
+loom {
+    accessWidenerPath = file("src/main/resources/mms_combat.accesswidener")
+    runs {
+        clientAlice {
+            client()
+            name = "Client Alice"
+            runDir = "run/alice"
+            programArgs "--username", "Alice"
+        }
+        clientBob {
+            client()
+            name = "Client Bob"
+            runDir = "run/bob"
+            programArgs "--username", "Bob"
+        }
+    }
+}
+
 repositories {
     mavenCentral()
     maven { url "https://api.modrinth.com/maven" }
@@ -21,8 +40,10 @@ dependencies {
     modImplementation "net.fabricmc.fabric-api:fabric-api:0.141.4+1.21.11"
     modImplementation "info.mudbourn:mms-render-common:${project.render_common_version}"
     // Just Enough Guns is the source of the ranged killstreak rewards; local jar
-    // (no Maven), present at compile time and in dev runs so gun rewards resolve.
-    modImplementation files("libs/justenoughguns-fabric-1.4.0.jar")
+    // (no Maven), compile-only; the runtime copy lives in the target instance.
+    modCompileOnly files("libs/justenoughguns-fabric-1.4.0.jar")
+    // GeckoLib is JEG's own required dependency, provided the same way.
+    modCompileOnly files("libs/geckolib-fabric-1.21.11-5.4.5.jar")
 }
 
 tasks.withType(JavaCompile).configureEach {

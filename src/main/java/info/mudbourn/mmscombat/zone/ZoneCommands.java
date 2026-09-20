@@ -4,8 +4,11 @@ import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.arguments.BoolArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
+import com.mojang.brigadier.suggestion.SuggestionProvider;
+import java.util.List;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
+import net.minecraft.commands.SharedSuggestionProvider;
 import net.minecraft.commands.arguments.coordinates.BlockPosArgument;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
@@ -17,6 +20,20 @@ public final class ZoneCommands {
 
     private static final double SHOW_RANGE = 96.0;
     private static final int SHOW_MAX_POINTS = 600;
+
+    // The three zone flag names, suggested for the flag argument.
+    private static final List<String> FLAG_NAMES = List.of(
+        "flagCombatOnEnter",
+        "suppressNaturalSpawns",
+        "blockExplosionShield");
+
+    // Completes an existing zone name from the live store.
+    private static final SuggestionProvider<CommandSourceStack> ZONE_NAMES = (ctx, builder) ->
+        SharedSuggestionProvider.suggest(ZoneStore.all().stream().map(zone -> zone.name), builder);
+
+    // Completes a flag name.
+    private static final SuggestionProvider<CommandSourceStack> FLAG_SUGGESTIONS = (ctx, builder) ->
+        SharedSuggestionProvider.suggest(FLAG_NAMES, builder);
 
     private ZoneCommands() {
     }
@@ -30,6 +47,7 @@ public final class ZoneCommands {
                             .executes(ZoneCommands::addZone)))))
             .then(Commands.literal("remove")
                 .then(Commands.argument("name", StringArgumentType.word())
+                    .suggests(ZONE_NAMES)
                     .executes(ZoneCommands::removeZone)))
             .then(Commands.literal("list")
                 .executes(ZoneCommands::listZones))
@@ -37,7 +55,9 @@ public final class ZoneCommands {
                 .executes(ZoneCommands::showZones))
             .then(Commands.literal("flag")
                 .then(Commands.argument("name", StringArgumentType.word())
+                    .suggests(ZONE_NAMES)
                     .then(Commands.argument("flag", StringArgumentType.word())
+                        .suggests(FLAG_SUGGESTIONS)
                         .then(Commands.argument("value", BoolArgumentType.bool())
                             .executes(ZoneCommands::flagZone)))));
     }

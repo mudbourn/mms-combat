@@ -17,7 +17,7 @@ public class MmsCombatClient implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
         ClientPlayNetworking.registerGlobalReceiver(CombatStatePayload.TYPE, (payload, context) ->
-            context.client().execute(() -> CombatHudState.update(payload.inCombat(), payload.secondsLeft())));
+            context.client().execute(() -> CombatHudState.update(payload.inCombat(), payload.secondsLeft(), payload.inZone())));
         HudElementRegistry.attachElementAfter(
             VanillaHudElements.HOTBAR,
             CombatHudRenderer.ID,

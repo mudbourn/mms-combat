@@ -24,6 +24,7 @@ public final class CombatManager {
 
     private final Map<UUID, Long> deadlines = new HashMap<>();
     private final Map<UUID, Integer> lastSentSeconds = new HashMap<>();
+    private final Map<UUID, Boolean> lastSentInZone = new HashMap<>();
     private final LogoutBodyManager bodies = new LogoutBodyManager();
 
     private CombatManager() {
@@ -69,7 +70,7 @@ public final class CombatManager {
     public void flag(ServerPlayer player) {
         long deadline = player.level().getGameTime() + CombatConfig.get().combatTicks;
         deadlines.put(player.getUUID(), deadline);
-        sendState(player, true, secondsLeft(player, deadline));
+        sendState(player, true, secondsLeft(player, deadline), inFlaggingZone(player));
     }
 
     public boolean isFlagged(ServerPlayer player) {
@@ -88,21 +89,31 @@ public final class CombatManager {
     private void clear(ServerPlayer player) {
         if (deadlines.remove(player.getUUID()) != null) {
             lastSentSeconds.remove(player.getUUID());
-            sendState(player, false, 0);
+            lastSentInZone.remove(player.getUUID());
+            sendState(player, false, 0, false);
         }
     }
 
     private void onDisconnect(ServerPlayer player) {
         Long deadline = deadlines.remove(player.getUUID());
         lastSentSeconds.remove(player.getUUID());
+        lastSentInZone.remove(player.getUUID());
         if (deadline != null) {
             int remaining = (int) Math.max(0, deadline - player.level().getGameTime());
-            bodies.createBody(player, CombatConfig.get().resolveLinger(remaining));
+            boolean persistent = inFlaggingZone(player);
+            bodies.createBody(player, CombatConfig.get().resolveLinger(remaining), persistent);
         }
     }
 
     private void tick(MinecraftServer server) {
         bodies.tick(server);
+        // Standing in a flagCombatOnEnter zone flags or refreshes combat, even for a player not already fighting.
+        for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+            if (inFlaggingZone(player)) {
+                deadlines.put(player.getUUID(),
+                    player.level().getGameTime() + CombatConfig.get().combatTicks);
+            }
+        }
         if (deadlines.isEmpty()) {
             return;
         }
@@ -114,30 +125,33 @@ public final class CombatManager {
                 it.remove();
                 continue;
             }
-            refreshZoneEntry(player);
+            boolean inZone = inFlaggingZone(player);
             long now = player.level().getGameTime();
             if (now >= entry.getValue()) {
                 it.remove();
                 lastSentSeconds.remove(entry.getKey());
-                sendState(player, false, 0);
+                lastSentInZone.remove(entry.getKey());
+                sendState(player, false, 0, false);
                 continue;
             }
-            maybeSendCountdown(player, secondsLeft(player, entry.getValue()));
+            maybeSendCountdown(player, secondsLeft(player, entry.getValue()), inZone);
         }
     }
 
-    private void refreshZoneEntry(ServerPlayer player) {
-        if (player.level() instanceof ServerLevel level
-            && ZoneStore.flagsCombatOnEntry(level, player.blockPosition())) {
-            deadlines.put(player.getUUID(),
-                player.level().getGameTime() + CombatConfig.get().combatTicks);
-        }
+    // Whether the player currently stands in a zone that flags combat on entry.
+    private boolean inFlaggingZone(ServerPlayer player) {
+        return player.level() instanceof ServerLevel level
+            && ZoneStore.flagsCombatOnEntry(level, player.blockPosition());
     }
 
-    private void maybeSendCountdown(ServerPlayer player, int seconds) {
-        Integer last = lastSentSeconds.get(player.getUUID());
-        if (last == null || last != seconds) {
-            sendState(player, true, seconds);
+    // Pushes an update only when the displayed content changes: the second while counting down, or the zone hold toggling.
+    private void maybeSendCountdown(ServerPlayer player, int seconds, boolean inZone) {
+        Integer lastSeconds = lastSentSeconds.get(player.getUUID());
+        Boolean lastZone = lastSentInZone.get(player.getUUID());
+        boolean changed = lastSeconds == null || lastSeconds != seconds
+            || lastZone == null || lastZone != inZone;
+        if (changed) {
+            sendState(player, true, seconds, inZone);
         }
     }
 
@@ -146,8 +160,9 @@ public final class CombatManager {
         return (int) Math.ceil(ticks / 20.0);
     }
 
-    private void sendState(ServerPlayer player, boolean inCombat, int seconds) {
+    private void sendState(ServerPlayer player, boolean inCombat, int seconds, boolean inZone) {
         lastSentSeconds.put(player.getUUID(), seconds);
-        ServerPlayNetworking.send(player, new CombatStatePayload(inCombat, seconds));
+        lastSentInZone.put(player.getUUID(), inZone);
+        ServerPlayNetworking.send(player, new CombatStatePayload(inCombat, seconds, inZone));
     }
 }

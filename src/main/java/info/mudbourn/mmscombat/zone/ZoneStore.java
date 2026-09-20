@@ -89,6 +89,17 @@ public final class ZoneStore {
         return matches(level, pos, false);
     }
 
+    // Whether a block at this position sits in a zone that shields terrain from explosions.
+    public static boolean shieldsExplosion(ServerLevel level, BlockPos pos) {
+        String dim = level.dimension().identifier().toString();
+        for (Zone zone : ZONES) {
+            if (zone.contains(dim, pos.getX(), pos.getY(), pos.getZ()) && zone.blockExplosionShield) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private static boolean matches(ServerLevel level, BlockPos pos, boolean combat) {
         String dim = level.dimension().identifier().toString();
         for (Zone zone : ZONES) {
