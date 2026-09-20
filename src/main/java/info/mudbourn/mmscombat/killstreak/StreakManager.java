@@ -45,6 +45,17 @@ public final class StreakManager {
         return streaks.getOrDefault(player.getUUID(), 0);
     }
 
+    // Seconds until this player's streak next decays, or 0 when they hold no streak or decay is disabled.
+    public int decaySecondsLeft(ServerPlayer player) {
+        int decayTicks = CombatConfig.get().streakDecayTicks;
+        if (decayTicks <= 0 || !streaks.containsKey(player.getUUID())) {
+            return 0;
+        }
+        long last = lastKillTick.getOrDefault(player.getUUID(), player.level().getGameTime());
+        long remaining = decayTicks - (player.level().getGameTime() - last);
+        return (int) Math.ceil(Math.max(0, remaining) / 20.0);
+    }
+
     // Sets a player's streak directly and fires the tier reward if the new count lands on one, so a tier can be tested without grinding kills.
     public void setStreak(ServerPlayer player, int count) {
         if (count <= 0) {

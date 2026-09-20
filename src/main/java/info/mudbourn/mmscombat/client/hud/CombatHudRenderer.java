@@ -20,12 +20,10 @@ public final class CombatHudRenderer implements HudElement {
     private static final int SOURCE_SIZE = 800;
     private static final int ICON_SIZE = 28;
     private static final int TEXT_COLOR = 0xFFFF5555;
+    private static final int STREAK_COLOR = 0xFFFFD54A;
 
     @Override
     public void render(GuiGraphics context, DeltaTracker tickCounter) {
-        if (!CombatHudState.inCombat()) {
-            return;
-        }
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.player == null || minecraft.options.hideGui) {
             return;
@@ -35,7 +33,22 @@ public final class CombatHudRenderer implements HudElement {
         int screenHeight = minecraft.getWindow().getGuiScaledHeight();
         int iconX = screenWidth / 2 - ICON_SIZE / 2;
         int iconY = screenHeight - 75;
+        int textX = iconX + ICON_SIZE + 4;
 
+        // The streak counter and its decay countdown stand on their own, shown whenever the player holds a streak whether or not they are combat logged.
+        int streak = CombatHudState.streak();
+        if (streak > 0) {
+            int decay = CombatHudState.decaySeconds();
+            String text = decay > 0
+                ? "Streak " + streak + " (" + decay + "s)"
+                : "Streak " + streak;
+            int streakY = iconY - font.lineHeight - 2;
+            context.drawString(font, Component.literal(text), textX, streakY, STREAK_COLOR, true);
+        }
+
+        if (!CombatHudState.inCombat()) {
+            return;
+        }
         context.blit(
             RenderPipelines.GUI_TEXTURED,
             SPRITE,
@@ -53,7 +66,6 @@ public final class CombatHudRenderer implements HudElement {
         Component label = CombatHudState.inZone()
             ? Component.literal("In Combat Zone")
             : Component.literal(Integer.toString(CombatHudState.secondsLeft()) + "s");
-        int textX = iconX + ICON_SIZE + 4;
         int textY = iconY + ICON_SIZE / 2 - font.lineHeight / 2;
         context.drawString(font, label, textX, textY, TEXT_COLOR, true);
     }

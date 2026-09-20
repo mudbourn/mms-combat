@@ -1,6 +1,7 @@
 package info.mudbourn.mmscombat.combatlog;
 
 import info.mudbourn.mmscombat.config.CombatConfig;
+import info.mudbourn.mmscombat.killstreak.StreakManager;
 import info.mudbourn.mmscombat.net.CombatStatePayload;
 import info.mudbourn.mmscombat.registry.MmsCombatRegistries;
 import info.mudbourn.mmscombat.zone.ZoneStore;
@@ -30,6 +31,9 @@ public final class CombatManager {
     private final Map<UUID, Long> deadlines = new HashMap<>();
     private final Map<UUID, Integer> lastSentSeconds = new HashMap<>();
     private final Map<UUID, Boolean> lastSentInZone = new HashMap<>();
+    private final Map<UUID, Boolean> lastSentInCombat = new HashMap<>();
+    private final Map<UUID, Integer> lastSentStreak = new HashMap<>();
+    private final Map<UUID, Integer> lastSentDecay = new HashMap<>();
     private final LogoutBodyManager bodies = new LogoutBodyManager();
     private final RandomKillProtection rkp = new RandomKillProtection();
 
@@ -103,8 +107,7 @@ public final class CombatManager {
 
     private void clear(ServerPlayer player) {
         if (deadlines.remove(player.getUUID()) != null) {
-            lastSentSeconds.remove(player.getUUID());
-            lastSentInZone.remove(player.getUUID());
+            forgetSentState(player.getUUID());
             playCombatSound(player, MmsCombatRegistries.COMBAT_END);
             sendState(player, false, 0, false);
         }
@@ -113,8 +116,7 @@ public final class CombatManager {
     private void onDisconnect(ServerPlayer player) {
         rkp.remove(player.getUUID());
         Long deadline = deadlines.remove(player.getUUID());
-        lastSentSeconds.remove(player.getUUID());
-        lastSentInZone.remove(player.getUUID());
+        forgetSentState(player.getUUID());
         if (deadline != null) {
             int remaining = (int) Math.max(0, deadline - player.level().getGameTime());
             boolean persistent = inFlaggingZone(player);
@@ -135,9 +137,6 @@ public final class CombatManager {
                     player.level().getGameTime() + CombatConfig.get().combatTicks);
             }
         }
-        if (deadlines.isEmpty()) {
-            return;
-        }
         Iterator<Map.Entry<UUID, Long>> it = deadlines.entrySet().iterator();
         while (it.hasNext()) {
             Map.Entry<UUID, Long> entry = it.next();
@@ -146,17 +145,16 @@ public final class CombatManager {
                 it.remove();
                 continue;
             }
-            boolean inZone = inFlaggingZone(player);
-            long now = player.level().getGameTime();
-            if (now >= entry.getValue()) {
+            if (player.level().getGameTime() >= entry.getValue()) {
                 it.remove();
-                lastSentSeconds.remove(entry.getKey());
-                lastSentInZone.remove(entry.getKey());
+                forgetSentState(entry.getKey());
                 playCombatSound(player, MmsCombatRegistries.COMBAT_END);
                 sendState(player, false, 0, false);
-                continue;
             }
-            maybeSendCountdown(player, secondsLeft(player, entry.getValue()), inZone);
+        }
+        // Keeps every player's HUD in sync, so the streak counter and its decay countdown update even for players who are not combat logged.
+        for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+            refreshHud(player);
         }
     }
 
@@ -166,20 +164,42 @@ public final class CombatManager {
             && ZoneStore.flagsCombatOnEntry(level, player.blockPosition());
     }
 
-    // Pushes an update only when the displayed content changes: the second while counting down, or the zone hold toggling.
-    private void maybeSendCountdown(ServerPlayer player, int seconds, boolean inZone) {
-        Integer lastSeconds = lastSentSeconds.get(player.getUUID());
-        Boolean lastZone = lastSentInZone.get(player.getUUID());
-        boolean changed = lastSeconds == null || lastSeconds != seconds
-            || lastZone == null || lastZone != inZone;
+    // Pushes an update only when the displayed content changes: the combat flag, its countdown, the zone hold, the streak, or the streak's decay countdown.
+    private void refreshHud(ServerPlayer player) {
+        UUID id = player.getUUID();
+        Long deadline = deadlines.get(id);
+        boolean inCombat = deadline != null;
+        int seconds = inCombat ? secondsLeft(player, deadline) : 0;
+        boolean inZone = inFlaggingZone(player);
+        int streak = StreakManager.get().getStreak(player);
+        int decay = StreakManager.get().decaySecondsLeft(player);
+        Boolean lastCombat = lastSentInCombat.get(id);
+        Integer lastSeconds = lastSentSeconds.get(id);
+        Boolean lastZone = lastSentInZone.get(id);
+        Integer lastStreak = lastSentStreak.get(id);
+        Integer lastDecay = lastSentDecay.get(id);
+        boolean changed = lastCombat == null || lastCombat != inCombat
+            || lastSeconds == null || lastSeconds != seconds
+            || lastZone == null || lastZone != inZone
+            || lastStreak == null || lastStreak != streak
+            || lastDecay == null || lastDecay != decay;
         if (changed) {
-            sendState(player, true, seconds, inZone);
+            sendState(player, inCombat, seconds, inZone);
         }
     }
 
     private int secondsLeft(ServerPlayer player, long deadline) {
         long ticks = Math.max(0, deadline - player.level().getGameTime());
         return (int) Math.ceil(ticks / 20.0);
+    }
+
+    // Drops the last-sent HUD snapshot for a player so the next send is never suppressed as unchanged.
+    private void forgetSentState(UUID player) {
+        lastSentInCombat.remove(player);
+        lastSentSeconds.remove(player);
+        lastSentInZone.remove(player);
+        lastSentStreak.remove(player);
+        lastSentDecay.remove(player);
     }
 
     // Plays a combat-state cue to just this player, at their own position so they always hear it.
@@ -196,8 +216,13 @@ public final class CombatManager {
     }
 
     private void sendState(ServerPlayer player, boolean inCombat, int seconds, boolean inZone) {
+        int streak = StreakManager.get().getStreak(player);
+        int decay = StreakManager.get().decaySecondsLeft(player);
+        lastSentInCombat.put(player.getUUID(), inCombat);
         lastSentSeconds.put(player.getUUID(), seconds);
         lastSentInZone.put(player.getUUID(), inZone);
-        ServerPlayNetworking.send(player, new CombatStatePayload(inCombat, seconds, inZone));
+        lastSentStreak.put(player.getUUID(), streak);
+        lastSentDecay.put(player.getUUID(), decay);
+        ServerPlayNetworking.send(player, new CombatStatePayload(inCombat, seconds, inZone, streak, decay));
     }
 }

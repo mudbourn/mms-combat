@@ -6,14 +6,18 @@ public final class CombatHudState {
     private static volatile boolean inCombat;
     private static volatile int secondsLeft;
     private static volatile boolean inZone;
+    private static volatile int streak;
+    private static volatile int decaySeconds;
 
     private CombatHudState() {
     }
 
-    public static void update(boolean combat, int seconds, boolean zone) {
+    public static void update(boolean combat, int seconds, boolean zone, int streakCount, int decayLeft) {
         inCombat = combat;
         secondsLeft = seconds;
         inZone = zone;
+        streak = streakCount;
+        decaySeconds = decayLeft;
     }
 
     public static boolean inCombat() {
@@ -26,5 +30,13 @@ public final class CombatHudState {
 
     public static boolean inZone() {
         return inZone;
+    }
+
+    public static int streak() {
+        return streak;
+    }
+
+    public static int decaySeconds() {
+        return decaySeconds;
     }
 }
