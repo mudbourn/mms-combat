@@ -3,7 +3,7 @@
  "minecraft:geometry": [
   {
    "description": {
-    "identifier": "geometry.killstreak_canopy",
+    "identifier": "geometry.killstreak_chute_lines",
     "texture_width": 8,
     "texture_height": 8,
     "visible_bounds_width": 4,
@@ -16,7 +16,7 @@
    },
    "bones": [
     {
-     "name": "canopy",
+     "name": "lines",
      "pivot": [
       0,
       0,
@@ -25,98 +25,106 @@
      "cubes": [
       {
        "origin": [
-        -11,
-        29,
-        -11
+        7,
+        13,
+        7
        ],
        "size": [
-        22,
-        1.5,
-        22
+        1,
+        17,
+        1
        ],
        "uv": [
         0,
         0
-       ]
-      },
-      {
-       "origin": [
-        -10,
-        30.5,
-        -10
        ],
-       "size": [
-        20,
-        1.5,
-        20
-       ],
-       "uv": [
+       "rotation": [
+        12,
         0,
-        0
+        12
+       ],
+       "pivot": [
+        7.5,
+        13,
+        7.5
        ]
       },
       {
        "origin": [
         -8,
-        32,
+        13,
+        7
+       ],
+       "size": [
+        1,
+        17,
+        1
+       ],
+       "uv": [
+        0,
+        0
+       ],
+       "rotation": [
+        12,
+        0,
+        -12
+       ],
+       "pivot": [
+        -7.5,
+        13,
+        7.5
+       ]
+      },
+      {
+       "origin": [
+        7,
+        13,
         -8
        ],
        "size": [
-        16,
-        2,
-        16
+        1,
+        17,
+        1
        ],
        "uv": [
         0,
         0
-       ]
-      },
-      {
-       "origin": [
-        -6,
-        34,
-        -6
        ],
-       "size": [
-        12,
-        2,
+       "rotation": [
+        -12,
+        0,
         12
        ],
-       "uv": [
-        0,
-        0
+       "pivot": [
+        7.5,
+        13,
+        -7.5
        ]
       },
       {
        "origin": [
-        -3.5,
-        36,
-        -3.5
+        -8,
+        13,
+        -8
        ],
        "size": [
-        7,
-        2,
-        7
+        1,
+        17,
+        1
        ],
        "uv": [
         0,
         0
-       ]
-      },
-      {
-       "origin": [
-        -1.5,
-        38,
-        -1.5
        ],
-       "size": [
-        3,
-        2,
-        3
-       ],
-       "uv": [
+       "rotation": [
+        -12,
         0,
-        0
+        -12
+       ],
+       "pivot": [
+        -7.5,
+        13,
+        -7.5
        ]
       }
      ]

@@ -23,12 +23,16 @@ public class KillstreakCrateRenderer extends EntityRenderer<KillstreakCrateEntit
         Identifier.fromNamespaceAndPath(MmsCombat.MOD_ID, "geo/killstreak_crate.geo.json");
     private static final Identifier TEXTURE =
         Identifier.fromNamespaceAndPath(MmsCombat.MOD_ID, "textures/entity/killstreak_crate.png");
-    private static final Identifier PARACHUTE_GEO =
+    private static final Identifier CANOPY_GEO =
         Identifier.fromNamespaceAndPath(MmsCombat.MOD_ID, "geo/killstreak_parachute.geo.json");
+    private static final Identifier LINES_GEO =
+        Identifier.fromNamespaceAndPath(MmsCombat.MOD_ID, "geo/killstreak_chute_lines.geo.json");
+    // A flat white sheet the canopy and lines are tinted from at draw time.
     private static final Identifier PARACHUTE_TEXTURE =
         Identifier.fromNamespaceAndPath(MmsCombat.MOD_ID, "textures/entity/killstreak_parachute.png");
-    // Fits the tall create_parachute canopy above the small crate.
-    private static final float PARACHUTE_SCALE = 0.35F;
+    // RGB the canopy and suspension lines are tinted to, alpha filled from the crate's fade.
+    private static final int CANOPY_RGB = 0xCC3322;
+    private static final int LINES_RGB = 0x4A3520;
     // Blocks the crate rises through as it fades in, and again as it fades out.
     private static final float RISE = 0.6F;
 
@@ -71,12 +75,16 @@ public class KillstreakCrateRenderer extends EntityRenderer<KillstreakCrateEntit
         RenderType crateType = RenderTypes.entityTranslucent(TEXTURE);
         collector.submitCustomGeometry(poseStack, crateType, (pose, consumer) ->
             crate.draw(pose, consumer, state.lightCoords, OverlayTexture.NO_OVERLAY, alpha | 0x00FFFFFF));
-        GeoModel parachute = GeoModel.load(PARACHUTE_GEO);
-        if (parachute != null) {
-            poseStack.scale(PARACHUTE_SCALE, PARACHUTE_SCALE, PARACHUTE_SCALE);
-            RenderType parachuteType = RenderTypes.entityTranslucent(PARACHUTE_TEXTURE);
+        RenderType parachuteType = RenderTypes.entityTranslucent(PARACHUTE_TEXTURE);
+        GeoModel canopy = GeoModel.load(CANOPY_GEO);
+        if (canopy != null) {
             collector.submitCustomGeometry(poseStack, parachuteType, (pose, consumer) ->
-                parachute.draw(pose, consumer, state.lightCoords, OverlayTexture.NO_OVERLAY, alpha | 0x00FFFFFF));
+                canopy.draw(pose, consumer, state.lightCoords, OverlayTexture.NO_OVERLAY, alpha | CANOPY_RGB));
+        }
+        GeoModel lines = GeoModel.load(LINES_GEO);
+        if (lines != null) {
+            collector.submitCustomGeometry(poseStack, parachuteType, (pose, consumer) ->
+                lines.draw(pose, consumer, state.lightCoords, OverlayTexture.NO_OVERLAY, alpha | LINES_RGB));
         }
         poseStack.popPose();
     }
