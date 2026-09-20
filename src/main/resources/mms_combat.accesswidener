@@ -2,3 +2,4 @@ accessWidener v2 named
 
 accessible method net/minecraft/world/entity/decoration/Mannequin setProfile (Lnet/minecraft/world/item/component/ResolvableProfile;)V
 accessible method net/minecraft/world/entity/decoration/Mannequin setImmovable (Z)V
+accessible method net/minecraft/world/entity/decoration/Mannequin setHideDescription (Z)V

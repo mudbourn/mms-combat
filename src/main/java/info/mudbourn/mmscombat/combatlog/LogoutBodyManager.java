@@ -41,6 +41,7 @@ public final class LogoutBodyManager {
     private final Set<UUID> pendingDeaths = new HashSet<>();
     private final Set<UUID> liveBodyIds = new HashSet<>();
     private final Set<UUID> pendingKills = new HashSet<>();
+    private final Map<UUID, String> pendingNames = new HashMap<>();
 
     // Discards any tagged body that is not one of this session's live bodies, so a body orphaned by a restart vanishes the moment its chunk loads instead of lingering.
     public void discardIfOrphan(Entity entity) {
@@ -75,8 +76,7 @@ public final class LogoutBodyManager {
         body.setProfile(ResolvableProfile.createResolved(player.getGameProfile()));
         body.setImmovable(true);
         body.setNoGravity(true);
-        body.setCustomName(Component.literal(player.getName().getString()));
-        body.setCustomNameVisible(true);
+        body.setHideDescription(true);
         body.addTag(BODY_TAG);
         for (EquipmentSlot slot : VISIBLE_SLOTS) {
             body.setItemSlot(slot, player.getItemBySlot(slot).copy());
@@ -88,6 +88,7 @@ public final class LogoutBodyManager {
         liveBodyIds.add(body.getUUID());
         level.addFreshEntity(body);
         LogoutBodyEvents.CREATED.invoker().onCreated(player, body);
+        level.removePlayerImmediately(player, Entity.RemovalReason.UNLOADED_WITH_PLAYER);
 
         long expiry = level.getGameTime() + lingerTicks;
         bodies.put(player.getUUID(), new Body(
@@ -99,6 +100,7 @@ public final class LogoutBodyManager {
             player.getZ(),
             expiry,
             persistent));
+        pendingNames.put(player.getUUID(), player.getName().getString());
         MmsCombat.LOG.info("Logout body for {} spawned, linger {} ticks, persistent {}",
             player.getName().getString(), lingerTicks, persistent);
     }
@@ -114,6 +116,7 @@ public final class LogoutBodyManager {
 
     public void tick(MinecraftServer server) {
         tickPendingKills(server);
+        applyPendingNames(server);
         if (bodies.isEmpty()) {
             return;
         }
@@ -143,8 +146,32 @@ public final class LogoutBodyManager {
         }
     }
 
+    // Names a body only once its owner has left the world, so the mannequin never wears a nametag beside the still-visible player.
+    private void applyPendingNames(MinecraftServer server) {
+        if (pendingNames.isEmpty()) {
+            return;
+        }
+        Iterator<Map.Entry<UUID, String>> it = pendingNames.entrySet().iterator();
+        while (it.hasNext()) {
+            Map.Entry<UUID, String> entry = it.next();
+            if (server.getPlayerList().getPlayer(entry.getKey()) != null) {
+                continue;
+            }
+            Body body = bodies.get(entry.getKey());
+            ServerLevel level = body == null ? null : resolveLevel(server, body.dimension);
+            Mannequin mannequin = level != null
+                && level.getEntity(body.bodyId) instanceof Mannequin found ? found : null;
+            if (mannequin != null) {
+                mannequin.setCustomName(Component.literal(entry.getValue()));
+                mannequin.setCustomNameVisible(true);
+            }
+            it.remove();
+        }
+    }
+
     // Removes a live body and returns the reconnecting player to normal, or kills them if their body was killed while away.
     public void onReconnect(ServerPlayer player) {
+        pendingNames.remove(player.getUUID());
         Body body = bodies.remove(player.getUUID());
         if (body != null) {
             liveBodyIds.remove(body.bodyId);
