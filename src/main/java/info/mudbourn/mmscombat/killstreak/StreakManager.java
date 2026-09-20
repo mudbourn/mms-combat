@@ -2,27 +2,23 @@ package info.mudbourn.mmscombat.killstreak;
 
 import info.mudbourn.mmscombat.config.CombatConfig;
 import info.mudbourn.mmscombat.config.CombatConfig.StreakTier;
-import java.util.ArrayList;
+import info.mudbourn.mmscombat.registry.MmsCombatRegistries;
 import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.minecraft.network.chat.Component;
-import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
 
-// Per-life kill tracking: a player-kills-player death advances the killer's streak, hitting a configured tier spawns a follower chest, and death or logout resets the count.
+// Per-life kill tracking: a player-kills-player death advances the killer's streak, hitting a configured tier spawns a killstreak crate, and death or logout resets the count.
 public final class StreakManager {
 
     private static final StreakManager INSTANCE = new StreakManager();
 
     private final Map<UUID, Integer> streaks = new HashMap<>();
-    private final List<FollowerChest> chests = new ArrayList<>();
 
     private StreakManager() {
     }
@@ -52,7 +48,7 @@ public final class StreakManager {
         return tierFor(kills);
     }
 
-    // Spawns a follower chest for an arbitrary tier, for testing the reward flow on demand.
+    // Spawns a crate for an arbitrary tier, for testing the reward flow on demand.
     public void spawnReward(ServerPlayer player, StreakTier tier) {
         awardTier(player, tier.kills, tier);
     }
@@ -65,7 +61,6 @@ public final class StreakManager {
         });
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) ->
             INSTANCE.streaks.remove(handler.player.getUUID()));
-        ServerTickEvents.END_SERVER_TICK.register(INSTANCE::tick);
     }
 
     private void onPlayerDeath(ServerPlayer victim, net.minecraft.world.entity.Entity killer) {
@@ -82,9 +77,15 @@ public final class StreakManager {
     private void awardTier(ServerPlayer player, int streak, StreakTier tier) {
         ItemStack reward = RewardPool.roll(tier, player.level().getRandom());
         player.sendSystemMessage(Component.literal(streak + " kill streak!"));
-        if (!reward.isEmpty()) {
-            chests.add(FollowerChest.spawn(player, reward));
+        if (reward.isEmpty()) {
+            return;
         }
+        ServerLevel level = player.level();
+        KillstreakCrateEntity crate = new KillstreakCrateEntity(MmsCombatRegistries.KILLSTREAK_CRATE, level);
+        crate.setPos(player.getX(), player.getY() + 1.0, player.getZ());
+        crate.setOwner(player.getUUID());
+        crate.giveReward(reward);
+        level.addFreshEntity(crate);
     }
 
     private StreakTier tierFor(int streak) {
@@ -94,17 +95,5 @@ public final class StreakManager {
             }
         }
         return null;
-    }
-
-    private void tick(MinecraftServer server) {
-        if (chests.isEmpty()) {
-            return;
-        }
-        Iterator<FollowerChest> it = chests.iterator();
-        while (it.hasNext()) {
-            if (it.next().tick(server)) {
-                it.remove();
-            }
-        }
     }
 }

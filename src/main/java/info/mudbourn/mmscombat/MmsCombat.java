@@ -5,6 +5,7 @@ import info.mudbourn.mmscombat.config.CombatConfig;
 import info.mudbourn.mmscombat.killstreak.StreakManager;
 import info.mudbourn.mmscombat.command.MmsCombatCommands;
 import info.mudbourn.mmscombat.net.CombatStatePayload;
+import info.mudbourn.mmscombat.registry.MmsCombatRegistries;
 import info.mudbourn.mmscombat.zone.ZoneStore;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
@@ -21,6 +22,7 @@ public class MmsCombat implements ModInitializer {
     @Override
     public void onInitialize() {
         CombatConfig.load();
+        MmsCombatRegistries.register();
         PayloadTypeRegistry.playS2C().register(CombatStatePayload.TYPE, CombatStatePayload.CODEC);
         CombatManager.register();
         StreakManager.register();
