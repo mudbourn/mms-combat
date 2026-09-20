@@ -27,8 +27,8 @@ public class KillstreakCrateRenderer extends EntityRenderer<KillstreakCrateEntit
         Identifier.fromNamespaceAndPath(MmsCombat.MOD_ID, "geo/killstreak_parachute.geo.json");
     private static final Identifier PARACHUTE_TEXTURE =
         Identifier.fromNamespaceAndPath(MmsCombat.MOD_ID, "textures/entity/killstreak_parachute.png");
-    // Shrinks the oversized airdrop canopy to perch just above the small crate.
-    private static final float PARACHUTE_SCALE = 0.45F;
+    // Fits the tall create_parachute canopy above the small crate.
+    private static final float PARACHUTE_SCALE = 0.35F;
     // Blocks the crate rises through as it fades in, and again as it fades out.
     private static final float RISE = 0.6F;
 
@@ -63,20 +63,20 @@ public class KillstreakCrateRenderer extends EntityRenderer<KillstreakCrateEntit
         if (crate == null) {
             return;
         }
-        int color = (Mth.floor(Mth.clamp(state.alpha, 0.0F, 1.0F) * 255.0F) << 24) | 0x00FFFFFF;
+        int alpha = Mth.floor(Mth.clamp(state.alpha, 0.0F, 1.0F) * 255.0F) << 24;
         float bob = Mth.sin(state.age * 0.08F) * 0.06F;
         poseStack.pushPose();
         poseStack.translate(0.0F, 0.4F + bob + state.animOffset, 0.0F);
         poseStack.mulPose(Axis.YP.rotationDegrees(-state.yaw));
         RenderType crateType = RenderTypes.entityTranslucent(TEXTURE);
         collector.submitCustomGeometry(poseStack, crateType, (pose, consumer) ->
-            crate.draw(pose, consumer, state.lightCoords, OverlayTexture.NO_OVERLAY, color));
+            crate.draw(pose, consumer, state.lightCoords, OverlayTexture.NO_OVERLAY, alpha | 0x00FFFFFF));
         GeoModel parachute = GeoModel.load(PARACHUTE_GEO);
         if (parachute != null) {
             poseStack.scale(PARACHUTE_SCALE, PARACHUTE_SCALE, PARACHUTE_SCALE);
             RenderType parachuteType = RenderTypes.entityTranslucent(PARACHUTE_TEXTURE);
             collector.submitCustomGeometry(poseStack, parachuteType, (pose, consumer) ->
-                parachute.draw(pose, consumer, state.lightCoords, OverlayTexture.NO_OVERLAY, color));
+                parachute.draw(pose, consumer, state.lightCoords, OverlayTexture.NO_OVERLAY, alpha | 0x00FFFFFF));
         }
         poseStack.popPose();
     }
