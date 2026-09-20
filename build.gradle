@@ -20,10 +20,9 @@ dependencies {
     modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
     modImplementation "net.fabricmc.fabric-api:fabric-api:0.141.4+1.21.11"
     modImplementation "info.mudbourn:mms-render-common:${project.render_common_version}"
-    // Just Enough Guns is the source of the ranged killstreak rewards; its items
-    // are granted by registry id, so it is compile-only and provided at runtime
-    // by the pack. Dropped in libs/ locally; see docs/DESIGN.md.
-    // modCompileOnly files("libs/justenoughguns-fabric-1.4.0.jar")
+    // Just Enough Guns is the source of the ranged killstreak rewards; local jar
+    // (no Maven), present at compile time and in dev runs so gun rewards resolve.
+    modImplementation files("libs/justenoughguns-fabric-1.4.0.jar")
 }
 
 tasks.withType(JavaCompile).configureEach {

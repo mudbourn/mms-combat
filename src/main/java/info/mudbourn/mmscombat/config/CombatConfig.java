@@ -77,9 +77,9 @@ public final class CombatConfig {
         List<StreakTier> tiers = new ArrayList<>();
         tiers.add(StreakTier.of(3, RewardEntry.of("minecraft:golden_apple", 2, 1)));
         tiers.add(StreakTier.of(5, RewardEntry.of("minecraft:diamond", 3, 1)));
-        tiers.add(StreakTier.of(8, RewardEntry.of("justenoughguns:ak47", 1, 1),
+        tiers.add(StreakTier.of(8, RewardEntry.weapon("assault_rifle", 1),
             RewardEntry.of("minecraft:diamond_block", 1, 1)));
-        tiers.add(StreakTier.of(12, RewardEntry.of("justenoughguns:rpg", 1, 1),
+        tiers.add(StreakTier.of(12, RewardEntry.weapon("mjolnir", 2),
             RewardEntry.of("minecraft:netherite_ingot", 1, 1)));
         return tiers;
     }
@@ -97,9 +97,10 @@ public final class CombatConfig {
         }
     }
 
-    // One weighted reward: a registry id, the stack count to grant, and its relative draw weight.
+    // One weighted reward: either a plain registry id (with count) or a killstreak weapon key, plus its relative draw weight.
     public static final class RewardEntry {
         public String item;
+        public String weapon;
         public int count = 1;
         public int weight = 1;
 
@@ -107,6 +108,13 @@ public final class CombatConfig {
             RewardEntry entry = new RewardEntry();
             entry.item = item;
             entry.count = count;
+            entry.weight = weight;
+            return entry;
+        }
+
+        public static RewardEntry weapon(String weapon, int weight) {
+            RewardEntry entry = new RewardEntry();
+            entry.weapon = weapon;
             entry.weight = weight;
             return entry;
         }

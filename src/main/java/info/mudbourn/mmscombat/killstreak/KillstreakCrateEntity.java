@@ -69,6 +69,18 @@ public class KillstreakCrateEntity extends Entity implements MenuProvider {
         this.contents.setItem(0, reward);
     }
 
+    // Lays the reward stacks across the front slots, so a gun and its ammo land side by side.
+    public void giveRewards(java.util.List<ItemStack> rewards) {
+        int slot = 0;
+        for (ItemStack reward : rewards) {
+            if (slot >= SLOTS) {
+                break;
+            }
+            this.contents.setItem(slot, reward);
+            slot++;
+        }
+    }
+
     @Override
     public void tick() {
         super.tick();

@@ -75,16 +75,16 @@ public final class StreakManager {
     }
 
     private void awardTier(ServerPlayer player, int streak, StreakTier tier) {
-        ItemStack reward = RewardPool.roll(tier, player.level().getRandom());
+        java.util.List<ItemStack> rewards = RewardPool.roll(tier, player);
         player.sendSystemMessage(Component.literal(streak + " kill streak!"));
-        if (reward.isEmpty()) {
+        if (rewards.isEmpty()) {
             return;
         }
         ServerLevel level = player.level();
         KillstreakCrateEntity crate = new KillstreakCrateEntity(MmsCombatRegistries.KILLSTREAK_CRATE, level);
         crate.setPos(player.getX(), player.getY() + 1.0, player.getZ());
         crate.setOwner(player.getUUID());
-        crate.giveReward(reward);
+        crate.giveRewards(rewards);
         level.addFreshEntity(crate);
     }
 

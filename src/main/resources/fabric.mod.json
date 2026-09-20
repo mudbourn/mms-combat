@@ -21,9 +21,7 @@
     "minecraft": "~1.21.11",
     "java": ">=21",
     "fabric-api": "*",
-    "mms_render_common": "*"
-  },
-  "suggests": {
+    "mms_render_common": "*",
     "justenoughguns": "*"
   }
 }
