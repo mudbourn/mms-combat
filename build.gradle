@@ -1,0 +1,59 @@
+plugins {
+    id 'net.fabricmc.fabric-loom-remap' version '1.17.14'
+}
+
+version = project.mod_version
+group = project.maven_group
+
+base {
+    archivesName = project.archives_base_name
+}
+
+repositories {
+    mavenCentral()
+    maven { url "https://api.modrinth.com/maven" }
+}
+
+dependencies {
+    minecraft "com.mojang:minecraft:${project.minecraft_version}"
+    mappings loom.officialMojangMappings()
+    modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+    modImplementation "net.fabricmc.fabric-api:fabric-api:0.141.4+1.21.11"
+    modImplementation "info.mudbourn:mms-render-common:${project.render_common_version}"
+    // Just Enough Guns is the source of the ranged killstreak rewards; its items
+    // are granted by registry id, so it is compile-only and provided at runtime
+    // by the pack. Dropped in libs/ locally; see docs/DESIGN.md.
+    // modCompileOnly files("libs/justenoughguns-fabric-1.4.0.jar")
+}
+
+tasks.withType(JavaCompile).configureEach {
+    it.options.release = 21
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
+
+    // Pin a JDK 21 toolchain so compile and runClient fork on a supported
+    // HotSpot JVM instead of whatever launched Gradle. Matches the other mms mods.
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+
+    withSourcesJar()
+}
+
+processResources {
+    // declare the version as an input so bumping gradle.properties
+    // invalidates the task (expand values are not tracked automatically)
+    inputs.property "mod_version", project.mod_version
+    filesMatching("fabric.mod.json") {
+        expand "version": project.mod_version
+    }
+}
+
+jar {
+    from("LICENSE") {
+        rename { "${it}_${project.base.archivesName.get()}" }
+    }
+}

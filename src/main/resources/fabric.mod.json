@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "id": "mms_combat",
+  "version": "${version}",
+  "name": "MMS Combat",
+  "description": "Combat logging, combat zones with spawn control, an in-combat HUD indicator, and killstreak weapon rewards for MMSLive01.",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "info.mudbourn.mmscombat.MmsCombat"
+    ],
+    "client": [
+      "info.mudbourn.mmscombat.client.MmsCombatClient"
+    ]
+  },
+  "mixins": [
+    "mms_combat.zone.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.16.0",
+    "minecraft": "~1.21.11",
+    "java": ">=21",
+    "fabric-api": "*",
+    "mms_render_common": "*"
+  },
+  "suggests": {
+    "justenoughguns": "*"
+  }
+}

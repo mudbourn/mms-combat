@@ -1,0 +1,17 @@
+.gradle/
+build/
+run/
+
+# Third-party compile-only mod jars (modCompileOnly). These are other
+# projects' redistributables under their own licenses; they are never shipped
+# inside our jar and are provided at runtime by the pack, so they are not
+# tracked here. Keep the files present locally to compile.
+libs/
+
+.DS_Store
+*.pem
+*.log
+*.txt
+*.md
+!README.md
+!docs/*.md

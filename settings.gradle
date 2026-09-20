@@ -1,0 +1,20 @@
+pluginManagement {
+    repositories {
+        maven { url = 'https://maven.fabricmc.net/' }
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+
+// mms-combat depends on mms-render-common for the Bedrock geo renderer that draws
+// the killstreak crate, wired in as a composite build so an edit upstream rebuilds
+// here without a jar copy -- and info.mudbourn:* is not published to any Maven repo,
+// so this substitution is the ONLY way the coordinate resolves.
+//
+// Locally the sibling sits next to this repo ('..'). CI checks siblings out into a
+// workspace subdir and overrides the root with -PmmsSiblingRoot, since
+// actions/checkout cannot write above $GITHUB_WORKSPACE. Keep the includeBuild path
+// a quoted literal ending in the repo name: mms-repos.py and the reusable release
+// workflow both discover sibling deps by reading exactly this line.
+def siblingRoot = providers.gradleProperty('mmsSiblingRoot').getOrElse('..')
+includeBuild "$siblingRoot/mms-render-common"
