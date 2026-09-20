@@ -17,6 +17,12 @@ the failure modes that made the killstreak and combat-log **datapacks** painful.
 - Killstreak rewards are a weighted table of registry ids in the config; an id
   whose mod is absent (a JEG gun on a client without JEG) is skipped, so the
   pool degrades instead of erroring.
+- Hitting a tier spawns a **killstreak crate**: a custom entity that eases to
+  hover ahead of and above its owner and swings behind them as they move, opened
+  by the owner into a four-slot "Killstreak Crate" menu to collect the reward.
+  It is transient (never saved) and despawns when emptied, its owner is gone, or
+  the server restarts. It is drawn from the ported `weapon_crate` Bedrock geo
+  through `mms-render-common`'s new `GeoModel` tool.
 - Logout bodies are per-session: the snapshot is not restored across a restart.
   A body that outlives the process is discarded the moment its chunk loads on the
   next boot (tagged stands not tracked this session are removed), so nothing
@@ -174,25 +180,35 @@ time.
 
 ---
 
-## Feature 4 — Killstreak rewards (follower chest + weapon pool)
+## Feature 4 — Killstreak rewards (killstreak crate + weapon pool)
 
 ### Streak tracking
-Kills are counted per life in a `StreakTracker` map, incremented on a
-player-kills-player event, reset on death or logout-body death. Tiers are a
-config list `[{ kills, rewardTable }]` (e.g. 3 / 5 / 8 / 12).
+Kills are counted per life in a streak map, incremented on a player-kills-player
+event, reset on death or logout. Tiers are a config list
+`[{ kills, rewardTable }]` (e.g. 3 / 5 / 8 / 12).
 
-### The follower chest
-On hitting a tier, spawn a **follower chest entity** that pathfinds/floats to the
-owning player (owner UUID stored on the entity; only the owner can open it).
-Rather than a full custom mob with AI, the cleanest build is a display/marker
-entity moved each tick toward the owner with simple lerping (no pathfinding
-cost, no getting stuck), rendered as a chest model. Interacting when it reaches
-the player opens a reward roll and consumes the chest.
+### The killstreak crate
+On hitting a tier, spawn a **killstreak crate** (`KillstreakCrateEntity`): a
+custom entity holding the rolled reward in a four-slot `SimpleContainer`, owner
+UUID stored on the entity so only the owner can open it. It is not a mob with AI
+and not a display entity; it is moved each tick with exponential easing toward a
+hover point computed from the owner's position and look. Idle, it sits ahead of
+and above the owner with a small back offset so it is not in their face; as the
+owner moves, the target swings behind them so it tweens out of the way. It floats
+(no gravity, no physics) and cannot be damaged.
 
-This is the concrete improvement over the `ks-support` datapack's item-recall /
-armor-stand chase, which used teleport loops and tag juggling that desynced. A
-single owned entity with a lifetime and an owner check removes the whole class
-of "whose chest is this / it teleported into a wall" bugs.
+Right-clicking it (owner only) opens a drawn four-slot menu titled "Killstreak
+Crate"; taking the reward empties the container and the crate despawns. It is
+transient: `shouldBeSaved()` is false, so a restart or a vanished owner simply
+drops it rather than leaving an orphan.
+
+The crate is rendered from the ported `weapon_crate` Bedrock geo through the new
+`GeoModel` tool in `mms-render-common` (the non-humanoid companion to the
+existing `HumanoidGeoModel`), wired in as a composite build. This is the concrete
+improvement over the `ks-support` datapack's item-recall / armor-stand chase,
+which used teleport loops and tag juggling that desynced: one owned entity with
+a lifetime and an owner check removes the whole class of "whose chest is this /
+it teleported into a wall" bugs.
 
 ### Reward pool (JEG + custom, per your pick)
 Each tier's `rewardTable` is a weighted list mixing:

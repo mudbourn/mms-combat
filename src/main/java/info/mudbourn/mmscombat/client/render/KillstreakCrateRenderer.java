@@ -10,6 +10,7 @@ import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.entity.state.EntityRenderState;
 import net.minecraft.client.renderer.rendertype.RenderType;
+import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.client.renderer.state.CameraRenderState;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.resources.Identifier;
@@ -22,6 +23,14 @@ public class KillstreakCrateRenderer extends EntityRenderer<KillstreakCrateEntit
         Identifier.fromNamespaceAndPath(MmsCombat.MOD_ID, "geo/killstreak_crate.geo.json");
     private static final Identifier TEXTURE =
         Identifier.fromNamespaceAndPath(MmsCombat.MOD_ID, "textures/entity/killstreak_crate.png");
+    private static final Identifier PARACHUTE_GEO =
+        Identifier.fromNamespaceAndPath(MmsCombat.MOD_ID, "geo/killstreak_parachute.geo.json");
+    private static final Identifier PARACHUTE_TEXTURE =
+        Identifier.fromNamespaceAndPath(MmsCombat.MOD_ID, "textures/entity/killstreak_parachute.png");
+    // Shrinks the oversized airdrop canopy to perch just above the small crate.
+    private static final float PARACHUTE_SCALE = 0.45F;
+    // Blocks the crate rises through as it fades in, and again as it fades out.
+    private static final float RISE = 0.6F;
 
     public KillstreakCrateRenderer(EntityRendererProvider.Context context) {
         super(context);
@@ -38,27 +47,49 @@ public class KillstreakCrateRenderer extends EntityRenderer<KillstreakCrateEntit
         super.extractRenderState(entity, state, partialTick);
         state.yaw = entity.getYRot();
         state.age = entity.tickCount + partialTick;
+        float appear = smoothstep(entity.appearProgress(partialTick));
+        float despawn = smoothstep(entity.despawnProgress(partialTick));
+        state.alpha = appear * (1.0F - despawn);
+        state.animOffset = (appear - 1.0F) * RISE + despawn * RISE;
     }
 
     @Override
     public void submit(State state, PoseStack poseStack, SubmitNodeCollector collector, CameraRenderState camera) {
         super.submit(state, poseStack, collector, camera);
-        GeoModel model = GeoModel.load(GEO);
-        if (model == null) {
+        if (state.alpha <= 0.0F) {
             return;
         }
+        GeoModel crate = GeoModel.load(GEO);
+        if (crate == null) {
+            return;
+        }
+        int color = (Mth.floor(Mth.clamp(state.alpha, 0.0F, 1.0F) * 255.0F) << 24) | 0x00FFFFFF;
         float bob = Mth.sin(state.age * 0.08F) * 0.06F;
         poseStack.pushPose();
-        poseStack.translate(0.0F, 0.4F + bob, 0.0F);
+        poseStack.translate(0.0F, 0.4F + bob + state.animOffset, 0.0F);
         poseStack.mulPose(Axis.YP.rotationDegrees(-state.yaw));
-        RenderType renderType = RenderType.entityCutoutNoCull(TEXTURE);
-        collector.submitCustomGeometry(poseStack, renderType, (pose, consumer) ->
-            model.draw(pose, consumer, state.lightCoords, OverlayTexture.NO_OVERLAY, -1));
+        RenderType crateType = RenderTypes.entityTranslucent(TEXTURE);
+        collector.submitCustomGeometry(poseStack, crateType, (pose, consumer) ->
+            crate.draw(pose, consumer, state.lightCoords, OverlayTexture.NO_OVERLAY, color));
+        GeoModel parachute = GeoModel.load(PARACHUTE_GEO);
+        if (parachute != null) {
+            poseStack.scale(PARACHUTE_SCALE, PARACHUTE_SCALE, PARACHUTE_SCALE);
+            RenderType parachuteType = RenderTypes.entityTranslucent(PARACHUTE_TEXTURE);
+            collector.submitCustomGeometry(poseStack, parachuteType, (pose, consumer) ->
+                parachute.draw(pose, consumer, state.lightCoords, OverlayTexture.NO_OVERLAY, color));
+        }
         poseStack.popPose();
+    }
+
+    // Eases a linear 0..1 progress into a soft start and stop so the fade and tween settle instead of snapping.
+    private static float smoothstep(float t) {
+        return t * t * (3.0F - 2.0F * t);
     }
 
     public static class State extends EntityRenderState {
         public float yaw;
         public float age;
+        public float alpha;
+        public float animOffset;
     }
 }
