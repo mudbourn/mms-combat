@@ -16,11 +16,18 @@ public final class CombatConfig {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static CombatConfig instance = new CombatConfig();
 
-    public int combatTicks = 300;
+    public int combatTicks = 1200;
     public boolean countPvE = false;
     public int bodyLingerTicks = 600;
     public boolean bodyForceLoad = true;
     public int hudUpdateInterval = 10;
+
+    public boolean randomKillProtection = true;
+    public int rkpFreeHits = 1;
+    public int rkpWeaknessTicks = 200;
+    public int rkpWeaknessAmplifier = 0;
+    public int rkpTeleportBlocks = 15;
+    public int rkpWindowTicks = 200;
 
     public List<StreakTier> streakTiers = defaultTiers();
 
@@ -58,6 +65,11 @@ public final class CombatConfig {
         combatTicks = Math.max(20, combatTicks);
         bodyLingerTicks = Math.max(600, bodyLingerTicks);
         hudUpdateInterval = Math.max(1, hudUpdateInterval);
+        rkpFreeHits = Math.max(1, rkpFreeHits);
+        rkpWeaknessTicks = Math.max(1, rkpWeaknessTicks);
+        rkpWeaknessAmplifier = Math.max(0, rkpWeaknessAmplifier);
+        rkpTeleportBlocks = Math.max(1, rkpTeleportBlocks);
+        rkpWindowTicks = Math.max(1, rkpWindowTicks);
         if (streakTiers == null || streakTiers.isEmpty()) {
             streakTiers = defaultTiers();
         }

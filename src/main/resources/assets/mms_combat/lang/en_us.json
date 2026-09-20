@@ -1,3 +1,5 @@
 {
-  "text.mms_combat.in_combat": "In Combat"
+  "text.mms_combat.in_combat": "In Combat",
+  "subtitles.mms_combat.combat_start": "Combat started",
+  "subtitles.mms_combat.combat_end": "Combat ended"
 }

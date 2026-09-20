@@ -1,0 +1,14 @@
+{
+  "combat_start": {
+    "subtitle": "subtitles.mms_combat.combat_start",
+    "sounds": [
+      "mms_combat:incombat"
+    ]
+  },
+  "combat_end": {
+    "subtitle": "subtitles.mms_combat.combat_end",
+    "sounds": [
+      "mms_combat:outcombat"
+    ]
+  }
+}

@@ -22,6 +22,7 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.decoration.Mannequin;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.ResolvableProfile;
+import net.minecraft.world.level.gamerules.GameRules;
 
 // The vulnerable logout body: a killable mannequin left when a flagged player logs out, wearing their skin, size, and gear and holding a snapshot of their inventory. Killed in time, the snapshot drops and the player loses it on next login; left to expire, it vanishes and the player keeps everything.
 public final class LogoutBodyManager {
@@ -36,9 +37,12 @@ public final class LogoutBodyManager {
         EquipmentSlot.OFFHAND
     };
 
+    private static final int REJOIN_KILL_DELAY = 10;
+
     private final Map<UUID, Body> bodies = new HashMap<>();
     private final Set<UUID> pendingDeaths = new HashSet<>();
     private final Set<UUID> liveBodyIds = new HashSet<>();
+    private final Map<UUID, Long> pendingKills = new HashMap<>();
 
     // Discards any tagged body that is not one of this session's live bodies, so a body orphaned by a restart vanishes the moment its chunk loads instead of lingering.
     public void discardIfOrphan(Entity entity) {
@@ -67,7 +71,9 @@ public final class LogoutBodyManager {
         float yaw = player.getYRot();
         body.snapTo(player.getX(), player.getY(), player.getZ(), yaw, player.getXRot());
         body.setYBodyRot(yaw);
-        body.setYHeadRot(player.getYHeadRot());
+        body.yBodyRotO = yaw;
+        body.setYHeadRot(yaw);
+        body.yHeadRotO = yaw;
         body.setProfile(ResolvableProfile.createResolved(player.getGameProfile()));
         body.setImmovable(true);
         body.setNoGravity(true);
@@ -109,6 +115,7 @@ public final class LogoutBodyManager {
     }
 
     public void tick(MinecraftServer server) {
+        tickPendingKills(server);
         if (bodies.isEmpty()) {
             return;
         }
@@ -122,7 +129,9 @@ public final class LogoutBodyManager {
             }
             Mannequin mannequin = level.getEntity(body.bodyId) instanceof Mannequin found ? found : null;
             if (mannequin == null || mannequin.isRemoved()) {
-                dropSnapshot(level, body);
+                if (!level.getGameRules().get(GameRules.KEEP_INVENTORY)) {
+                    dropSnapshot(level, body);
+                }
                 pendingDeaths.add(entry.getKey());
                 liveBodyIds.remove(body.bodyId);
                 it.remove();
@@ -136,7 +145,7 @@ public final class LogoutBodyManager {
         }
     }
 
-    // Removes a live body and returns the reconnecting player to normal, or empties them if their body was killed while away.
+    // Removes a live body and returns the reconnecting player to normal, or kills them if their body was killed while away.
     public void onReconnect(ServerPlayer player) {
         Body body = bodies.remove(player.getUUID());
         if (body != null) {
@@ -146,9 +155,33 @@ public final class LogoutBodyManager {
                 mannequin.discard();
             }
         }
-        if (pendingDeaths.remove(player.getUUID())) {
-            player.getInventory().clearContent();
+        if (pendingDeaths.remove(player.getUUID()) && player.level() instanceof ServerLevel level) {
+            pendingKills.put(player.getUUID(), level.getGameTime() + REJOIN_KILL_DELAY);
+        }
+    }
+
+    // Kills a returning player a few ticks after they join, once the client has loaded enough to show the death screen.
+    private void tickPendingKills(MinecraftServer server) {
+        if (pendingKills.isEmpty()) {
+            return;
+        }
+        Iterator<Map.Entry<UUID, Long>> it = pendingKills.entrySet().iterator();
+        while (it.hasNext()) {
+            Map.Entry<UUID, Long> entry = it.next();
+            ServerPlayer player = server.getPlayerList().getPlayer(entry.getKey());
+            if (player == null) {
+                it.remove();
+                continue;
+            }
+            if (!(player.level() instanceof ServerLevel level) || level.getGameTime() < entry.getValue()) {
+                continue;
+            }
+            if (!level.getGameRules().get(GameRules.KEEP_INVENTORY)) {
+                player.getInventory().clearContent();
+            }
             player.sendSystemMessage(Component.literal("You were killed after logging out in combat."));
+            player.kill(level);
+            it.remove();
         }
     }
 

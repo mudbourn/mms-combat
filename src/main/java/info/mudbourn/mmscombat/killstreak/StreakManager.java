@@ -97,7 +97,7 @@ public final class StreakManager {
 
     // Broadcasts the streak to everyone in chat and rolls a dragon growl out to every player, wherever they are.
     private void announceStreak(ServerPlayer player, int streak) {
-        MinecraftServer server = player.getServer();
+        MinecraftServer server = player.level().getServer();
         if (server == null) {
             return;
         }
