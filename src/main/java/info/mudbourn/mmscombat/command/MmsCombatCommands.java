@@ -5,7 +5,9 @@ import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import info.mudbourn.mmscombat.combatlog.CombatManager;
+import info.mudbourn.mmscombat.config.CombatConfig;
 import info.mudbourn.mmscombat.config.CombatConfig.StreakTier;
+import info.mudbourn.mmscombat.killstreak.StreakCommands;
 import info.mudbourn.mmscombat.killstreak.StreakManager;
 import info.mudbourn.mmscombat.zone.ZoneCommands;
 import info.mudbourn.mmscombat.zone.ZoneStore;
@@ -26,6 +28,11 @@ public final class MmsCombatCommands {
         dispatcher.register(Commands.literal("mmscombat")
             .requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
             .then(ZoneCommands.zoneSubcommand())
+            .then(StreakCommands.streaksSubcommand())
+            .then(Commands.literal("duration")
+                .executes(MmsCombatCommands::showDuration)
+                .then(Commands.argument("seconds", IntegerArgumentType.integer(1))
+                    .executes(MmsCombatCommands::setDuration)))
             .then(Commands.literal("flag")
                 .executes(ctx -> flag(ctx, self(ctx)))
                 .then(Commands.argument("target", EntityArgument.player())
@@ -50,6 +57,22 @@ public final class MmsCombatCommands {
 
     private static ServerPlayer self(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
         return ctx.getSource().getPlayerOrException();
+    }
+
+    private static int showDuration(CommandContext<CommandSourceStack> ctx) {
+        int seconds = CombatConfig.get().combatTicks / 20;
+        ctx.getSource().sendSuccess(
+            () -> Component.literal("Combat log duration is " + seconds + "s."), false);
+        return 1;
+    }
+
+    private static int setDuration(CommandContext<CommandSourceStack> ctx) {
+        int seconds = IntegerArgumentType.getInteger(ctx, "seconds");
+        CombatConfig.get().combatTicks = seconds * 20;
+        CombatConfig.save();
+        ctx.getSource().sendSuccess(
+            () -> Component.literal("Set combat log duration to " + seconds + "s."), true);
+        return 1;
     }
 
     private static int flag(CommandContext<CommandSourceStack> ctx, ServerPlayer target) {

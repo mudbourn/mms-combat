@@ -16,7 +16,7 @@ public final class CombatConfig {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static CombatConfig instance = new CombatConfig();
 
-    public int combatTicks = 1200;
+    public int combatTicks = 600;
     public boolean countPvE = false;
     public int bodyLingerTicks = 600;
     public boolean bodyForceLoad = true;
@@ -28,6 +28,9 @@ public final class CombatConfig {
     public int rkpWeaknessAmplifier = 0;
     public int rkpTeleportBlocks = 15;
     public int rkpWindowTicks = 200;
+
+    public int streakDecayTicks = 1200;
+    public int streakDecayAmount = 1;
 
     public List<StreakTier> streakTiers = defaultTiers();
 
@@ -70,6 +73,8 @@ public final class CombatConfig {
         rkpWeaknessAmplifier = Math.max(0, rkpWeaknessAmplifier);
         rkpTeleportBlocks = Math.max(1, rkpTeleportBlocks);
         rkpWindowTicks = Math.max(1, rkpWindowTicks);
+        streakDecayTicks = Math.max(0, streakDecayTicks);
+        streakDecayAmount = Math.max(1, streakDecayAmount);
         if (streakTiers == null || streakTiers.isEmpty()) {
             streakTiers = defaultTiers();
         }

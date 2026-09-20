@@ -37,12 +37,10 @@ public final class LogoutBodyManager {
         EquipmentSlot.OFFHAND
     };
 
-    private static final int REJOIN_KILL_DELAY = 10;
-
     private final Map<UUID, Body> bodies = new HashMap<>();
     private final Set<UUID> pendingDeaths = new HashSet<>();
     private final Set<UUID> liveBodyIds = new HashSet<>();
-    private final Map<UUID, Long> pendingKills = new HashMap<>();
+    private final Set<UUID> pendingKills = new HashSet<>();
 
     // Discards any tagged body that is not one of this session's live bodies, so a body orphaned by a restart vanishes the moment its chunk loads instead of lingering.
     public void discardIfOrphan(Entity entity) {
@@ -155,25 +153,24 @@ public final class LogoutBodyManager {
                 mannequin.discard();
             }
         }
-        if (pendingDeaths.remove(player.getUUID()) && player.level() instanceof ServerLevel level) {
-            pendingKills.put(player.getUUID(), level.getGameTime() + REJOIN_KILL_DELAY);
+        if (pendingDeaths.remove(player.getUUID())) {
+            pendingKills.add(player.getUUID());
         }
     }
 
-    // Kills a returning player a few ticks after they join, once the client has loaded enough to show the death screen.
+    // Kills a returning player once their client has finished loading the world, so the death screen actually shows.
     private void tickPendingKills(MinecraftServer server) {
         if (pendingKills.isEmpty()) {
             return;
         }
-        Iterator<Map.Entry<UUID, Long>> it = pendingKills.entrySet().iterator();
+        Iterator<UUID> it = pendingKills.iterator();
         while (it.hasNext()) {
-            Map.Entry<UUID, Long> entry = it.next();
-            ServerPlayer player = server.getPlayerList().getPlayer(entry.getKey());
+            ServerPlayer player = server.getPlayerList().getPlayer(it.next());
             if (player == null) {
                 it.remove();
                 continue;
             }
-            if (!(player.level() instanceof ServerLevel level) || level.getGameTime() < entry.getValue()) {
+            if (!player.connection.hasClientLoaded() || !(player.level() instanceof ServerLevel level)) {
                 continue;
             }
             if (!level.getGameRules().get(GameRules.KEEP_INVENTORY)) {
