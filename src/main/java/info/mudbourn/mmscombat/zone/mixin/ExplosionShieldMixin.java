@@ -10,10 +10,9 @@ import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+import org.spongepowered.asm.mixin.injection.ModifyVariable;
 
-// Drops explosion-destroyed blocks that fall inside a blockExplosionShield zone, so blasts still hurt entities but never break terrain there.
+// Drops explosion-affected blocks that fall inside a blockExplosionShield zone before they are broken or set alight, so blasts still hurt entities but never break terrain there.
 @Mixin(ServerExplosion.class)
 public class ExplosionShieldMixin {
 
@@ -21,14 +20,13 @@ public class ExplosionShieldMixin {
     @Final
     private ServerLevel level;
 
-    @Inject(
-        method = "calculateExplodedPositions",
-        at = @At("RETURN"),
-        cancellable = true)
-    private void mmsCombat$shieldBlocks(CallbackInfoReturnable<List<BlockPos>> cir) {
-        List<BlockPos> positions = cir.getReturnValue();
+    @ModifyVariable(
+        method = {"interactWithBlocks", "createFire"},
+        at = @At("HEAD"),
+        argsOnly = true)
+    private List<BlockPos> mmsCombat$shieldBlocks(List<BlockPos> positions) {
         if (positions.isEmpty()) {
-            return;
+            return positions;
         }
         List<BlockPos> kept = new ArrayList<>(positions.size());
         boolean shielded = false;
@@ -39,8 +37,6 @@ public class ExplosionShieldMixin {
                 kept.add(pos);
             }
         }
-        if (shielded) {
-            cir.setReturnValue(kept);
-        }
+        return shielded ? kept : positions;
     }
 }

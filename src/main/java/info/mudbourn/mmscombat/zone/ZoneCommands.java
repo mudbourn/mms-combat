@@ -2,6 +2,7 @@ package info.mudbourn.mmscombat.zone;
 
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.arguments.BoolArgumentType;
+import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
@@ -45,6 +46,21 @@ public final class ZoneCommands {
                     .then(Commands.argument("corner1", BlockPosArgument.blockPos())
                         .then(Commands.argument("corner2", BlockPosArgument.blockPos())
                             .executes(ZoneCommands::addZone)))))
+            .then(Commands.literal("poly")
+                .then(Commands.argument("name", StringArgumentType.word())
+                    .then(Commands.argument("minY", IntegerArgumentType.integer())
+                        .then(Commands.argument("maxY", IntegerArgumentType.integer())
+                            .executes(ZoneCommands::addPolyZone)))))
+            .then(Commands.literal("point")
+                .then(Commands.argument("name", StringArgumentType.word())
+                    .suggests(ZONE_NAMES)
+                    .executes(ZoneCommands::addPointHere)
+                    .then(Commands.argument("pos", BlockPosArgument.blockPos())
+                        .executes(ZoneCommands::addPointAt))))
+            .then(Commands.literal("undopoint")
+                .then(Commands.argument("name", StringArgumentType.word())
+                    .suggests(ZONE_NAMES)
+                    .executes(ZoneCommands::undoPoint)))
             .then(Commands.literal("remove")
                 .then(Commands.argument("name", StringArgumentType.word())
                     .suggests(ZONE_NAMES)
@@ -73,6 +89,64 @@ public final class ZoneCommands {
             return 0;
         }
         ctx.getSource().sendSuccess(() -> Component.literal("Added zone " + zone), true);
+        return 1;
+    }
+
+    private static int addPolyZone(CommandContext<CommandSourceStack> ctx) {
+        String name = StringArgumentType.getString(ctx, "name");
+        int minY = IntegerArgumentType.getInteger(ctx, "minY");
+        int maxY = IntegerArgumentType.getInteger(ctx, "maxY");
+        String dimension = ctx.getSource().getLevel().dimension().identifier().toString();
+        Zone zone = new Zone(name, dimension, minY, maxY);
+        if (!ZoneStore.add(zone)) {
+            ctx.getSource().sendFailure(Component.literal("A zone named " + name + " already exists."));
+            return 0;
+        }
+        ctx.getSource().sendSuccess(() -> Component.literal(
+            "Created polygon zone " + name + " (y " + zone.minY + " -> " + zone.maxY
+                + "). Add at least 3 edge points with /mmscombat zone point " + name), true);
+        return 1;
+    }
+
+    private static int addPointHere(CommandContext<CommandSourceStack> ctx) {
+        BlockPos pos = BlockPos.containing(ctx.getSource().getPosition());
+        return appendPoint(ctx, pos);
+    }
+
+    private static int addPointAt(CommandContext<CommandSourceStack> ctx) {
+        return appendPoint(ctx, BlockPosArgument.getBlockPos(ctx, "pos"));
+    }
+
+    private static int appendPoint(CommandContext<CommandSourceStack> ctx, BlockPos pos) {
+        String name = StringArgumentType.getString(ctx, "name");
+        Zone zone = ZoneStore.byName(name);
+        if (zone == null) {
+            ctx.getSource().sendFailure(Component.literal("No zone named " + name + "."));
+            return 0;
+        }
+        zone.addPoint(pos.getX(), pos.getZ());
+        ZoneStore.save();
+        int total = zone.polygon.size();
+        ctx.getSource().sendSuccess(() -> Component.literal(
+            "Added edge point " + total + " at " + pos.getX() + "," + pos.getZ() + " to " + name
+                + (total < 3 ? " (needs " + (3 - total) + " more to take effect)" : "")), true);
+        return 1;
+    }
+
+    private static int undoPoint(CommandContext<CommandSourceStack> ctx) {
+        String name = StringArgumentType.getString(ctx, "name");
+        Zone zone = ZoneStore.byName(name);
+        if (zone == null) {
+            ctx.getSource().sendFailure(Component.literal("No zone named " + name + "."));
+            return 0;
+        }
+        if (!zone.removeLastPoint()) {
+            ctx.getSource().sendFailure(Component.literal(name + " has no edge points to remove."));
+            return 0;
+        }
+        ZoneStore.save();
+        ctx.getSource().sendSuccess(() -> Component.literal(
+            "Removed the last edge point from " + name + " (" + zone.polygon.size() + " left)."), true);
         return 1;
     }
 
@@ -140,6 +214,10 @@ public final class ZoneCommands {
     }
 
     private static void outline(ServerLevel level, Zone zone) {
+        if (zone.isPolygon()) {
+            outlinePolygon(level, zone);
+            return;
+        }
         double sizeX = zone.maxX - zone.minX + 1;
         double sizeY = zone.maxY - zone.minY + 1;
         double sizeZ = zone.maxZ - zone.minZ + 1;
@@ -163,6 +241,30 @@ public final class ZoneCommands {
                 for (double y : new double[] {zone.minY, zone.maxY + 1}) {
                     spark(level, x, y, z);
                 }
+            }
+        }
+    }
+
+    private static void outlinePolygon(ServerLevel level, Zone zone) {
+        double lowY = zone.minY;
+        double highY = zone.maxY + 1;
+        int count = zone.polygon.size();
+        for (int i = 0, j = count - 1; i < count; j = i++) {
+            double xi = zone.polygon.get(i)[0] + 0.5;
+            double zi = zone.polygon.get(i)[1] + 0.5;
+            double xj = zone.polygon.get(j)[0] + 0.5;
+            double zj = zone.polygon.get(j)[1] + 0.5;
+            double edge = Math.hypot(xj - xi, zj - zi);
+            double edgeStep = Math.max(1.0, edge / (SHOW_MAX_POINTS / (double) count));
+            for (double d = 0; d <= edge; d += edgeStep) {
+                double t = edge == 0 ? 0 : d / edge;
+                double x = xi + (xj - xi) * t;
+                double z = zi + (zj - zi) * t;
+                spark(level, x, lowY, z);
+                spark(level, x, highY, z);
+            }
+            for (double y = lowY; y <= highY; y += 1.0) {
+                spark(level, xi, y, zi);
             }
         }
     }
