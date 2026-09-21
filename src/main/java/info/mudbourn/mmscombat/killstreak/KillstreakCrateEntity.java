@@ -51,7 +51,12 @@ public class KillstreakCrateEntity extends Entity implements MenuProvider {
     private static final int LIFETIME_TICKS = 600;
     // A blast that spares the owner and the terrain but punishes anyone else who crowds the drop.
     private static final double EXPLOSION_RADIUS = 4.0;
-    private static final float EXPLOSION_DAMAGE = 12.0F;
+    private static final float EXPLOSION_DAMAGE = 20.0F;
+    // A protective blast centered on the owner the moment the crate settles, clearing enemies crowding them at the drop.
+    private static final double PROTECT_RADIUS = 3.0;
+    private static final float PROTECT_DAMAGE = 20.0F;
+    // Ticks the crate eases in before it is considered settled near the owner and fires the protective blast.
+    private static final int SETTLE_TICKS = 10;
     // The invulnerability and heal window the owner gets the instant they collect.
     private static final int COLLECT_BUFF_TICKS = 100;
     // Length of the fade-and-tween the crate plays on arrival and again before it is removed.
@@ -71,6 +76,7 @@ public class KillstreakCrateEntity extends Entity implements MenuProvider {
     private UUID owner;
     private Vec3 lastOwnerPos;
     private int orphanAge;
+    private boolean protectedOwner;
     private int despawnTick = -1;
     private int clientDespawnAge;
     private int lastShownSeconds = -1;
@@ -137,6 +143,13 @@ public class KillstreakCrateEntity extends Entity implements MenuProvider {
         }
         this.orphanAge = 0;
         followOwner(target);
+        // Once settled next to its owner, the crate lets off a protective blast that clears anyone crowding them.
+        if (!this.protectedOwner && this.tickCount >= SETTLE_TICKS) {
+            this.protectedOwner = true;
+            if (this.level() instanceof ServerLevel level) {
+                blast(level, target.position(), PROTECT_RADIUS, PROTECT_DAMAGE);
+            }
+        }
     }
 
     // Grants the owner a brief invulnerability and heal the instant they clear the crate.
@@ -163,28 +176,32 @@ public class KillstreakCrateEntity extends Entity implements MenuProvider {
 
     // Detonates an uncollected crate: sound and particles, damage that falls off with distance to every nearby entity except the owner, and no block damage at all.
     private void explode() {
-        if (!(this.level() instanceof ServerLevel level)) {
-            return;
+        if (this.level() instanceof ServerLevel level) {
+            blast(level, this.position(), EXPLOSION_RADIUS, EXPLOSION_DAMAGE);
         }
-        Vec3 center = this.position();
+    }
+
+    // Sound, particles, and owner-sparing damage that falls off with horizontal distance from the center, so a player standing under it is still caught.
+    private void blast(ServerLevel level, Vec3 center, double radius, float maxDamage) {
         level.playSound(null, center.x, center.y, center.z,
             SoundEvents.GENERIC_EXPLODE, SoundSource.BLOCKS, 4.0F, 1.0F);
         level.sendParticles(ParticleTypes.EXPLOSION_EMITTER, center.x, center.y, center.z, 1, 0.0, 0.0, 0.0, 0.0);
         // An unattributed blast so it reads as the crate detonating, not the owner attacking, and so it is never suppressed as unprovoked PvP.
         DamageSource source = level.damageSources().explosion(this, null);
-        AABB area = this.getBoundingBox().inflate(EXPLOSION_RADIUS);
+        AABB area = new AABB(
+            center.x - radius, center.y - radius, center.z - radius,
+            center.x + radius, center.y + radius, center.z + radius);
         for (LivingEntity victim : level.getEntitiesOfClass(LivingEntity.class, area)) {
             if (this.owner != null && this.owner.equals(victim.getUUID())) {
                 continue;
             }
-            // Horizontal distance, so a player standing under the floating crate still takes the crowding punishment.
             double dx = victim.getX() - center.x;
             double dz = victim.getZ() - center.z;
             double distance = Math.sqrt(dx * dx + dz * dz);
-            if (distance > EXPLOSION_RADIUS) {
+            if (distance > radius) {
                 continue;
             }
-            float damage = (float) (EXPLOSION_DAMAGE * (1.0 - distance / EXPLOSION_RADIUS));
+            float damage = (float) (maxDamage * (1.0 - distance / radius));
             if (damage > 0.0F) {
                 victim.hurtServer(level, source, damage);
             }

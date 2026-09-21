@@ -23,6 +23,8 @@ public final class CombatConfig {
     public int hudUpdateInterval = 10;
 
     public boolean randomKillProtection = true;
+    public int rkpFreeHits = 1;
+    public int rkpWindowTicks = 200;
     public int rkpPenaltyTicks = 200;
     public int rkpTeleportBlocks = 15;
 
@@ -65,6 +67,8 @@ public final class CombatConfig {
         combatTicks = Math.max(20, combatTicks);
         bodyLingerTicks = Math.max(600, bodyLingerTicks);
         hudUpdateInterval = Math.max(1, hudUpdateInterval);
+        rkpFreeHits = Math.max(1, rkpFreeHits);
+        rkpWindowTicks = Math.max(1, rkpWindowTicks);
         rkpPenaltyTicks = Math.max(1, rkpPenaltyTicks);
         rkpTeleportBlocks = Math.max(1, rkpTeleportBlocks);
         streakDecayTicks = Math.max(0, streakDecayTicks);

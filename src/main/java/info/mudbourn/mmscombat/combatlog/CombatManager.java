@@ -45,6 +45,8 @@ public final class CombatManager {
 
     // Scoreboard team whose only job is to paint a flagged player's nametag red.
     private static final String COMBAT_TEAM = "mms_combat";
+    // The logout body left by a player who was only holding themselves in combat with the manual toggle: 15 seconds.
+    private static final int PERSISTENT_BODY_TICKS = 300;
 
     private CombatManager() {
     }
@@ -84,9 +86,10 @@ public final class CombatManager {
 
     private void onDamaged(ServerPlayer victim, net.minecraft.world.entity.Entity attacker) {
         if (attacker instanceof ServerPlayer aggressor && aggressor != victim) {
-            flag(victim);
-            flag(aggressor);
-        } else if (attacker instanceof Player && attacker != victim) {
+            // Player-vs-player flagging is decided in allowHit before the hit lands, so a courting hit never drags the victim into combat.
+            return;
+        }
+        if (attacker instanceof Player && attacker != victim) {
             flag(victim);
         } else if (CombatConfig.get().countPvE) {
             flag(victim);
@@ -166,14 +169,23 @@ public final class CombatManager {
     }
 
     private void onDisconnect(ServerPlayer player) {
+        boolean flagged = isFlagged(player);
         rkp.remove(player.getUUID());
         Long deadline = deadlines.remove(player.getUUID());
         forgetSentState(player.getUUID());
+        if (!flagged) {
+            return;
+        }
+        // A timed fight leaves a body for the full linger; a manual PvP hold leaves a short one so persistent loggers are still vulnerable on logout.
+        int linger;
         if (deadline != null) {
             int remaining = (int) Math.max(0, deadline - player.level().getGameTime());
-            boolean persistent = inFlaggingZone(player);
-            bodies.createBody(player, CombatConfig.get().resolveLinger(remaining), persistent);
+            linger = CombatConfig.get().resolveLinger(remaining);
+        } else {
+            linger = PERSISTENT_BODY_TICKS;
         }
+        boolean forceLoad = inFlaggingZone(player);
+        bodies.createBody(player, linger, forceLoad);
     }
 
     private void tick(MinecraftServer server) {
