@@ -53,6 +53,24 @@ public final class MmsCombatCommands {
             .then(Commands.literal("reward")
                 .then(Commands.argument("tierKills", IntegerArgumentType.integer(1))
                     .executes(ctx -> reward(ctx, self(ctx))))));
+        // Open to every player: hold yourself in combat so others can fight you, until you turn it back off.
+        dispatcher.register(Commands.literal("combatlog")
+            .executes(MmsCombatCommands::combatLogToggle)
+            .then(Commands.literal("on").executes(ctx -> combatLog(ctx, true)))
+            .then(Commands.literal("off").executes(ctx -> combatLog(ctx, false))));
+    }
+
+    private static int combatLogToggle(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
+        return combatLog(ctx, !CombatManager.get().isPersistentCombat(self(ctx)));
+    }
+
+    private static int combatLog(CommandContext<CommandSourceStack> ctx, boolean on) throws CommandSyntaxException {
+        ServerPlayer player = self(ctx);
+        CombatManager.get().setPersistentCombat(player, on);
+        ctx.getSource().sendSuccess(() -> Component.literal(on
+            ? "PvP is on: your nametag is red and other players can fight you until you turn it off."
+            : "PvP hold is off."), false);
+        return 1;
     }
 
     private static ServerPlayer self(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {

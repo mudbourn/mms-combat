@@ -31,7 +31,8 @@ public final class MmsCombatRegistries {
         ResourceKey<EntityType<?>> key = ResourceKey.create(Registries.ENTITY_TYPE, id("killstreak_crate"));
         return EntityType.Builder
             .of(KillstreakCrateEntity::new, MobCategory.MISC)
-            .sized(2.0F, 0.6F)
+            // Tall enough to reach the model, which the renderer floats up to ~1.2 blocks above the entity origin, so the interact box sits under the crate the player sees.
+            .sized(2.0F, 1.4F)
             // One position packet every 3 ticks, matching the crate's 3-tick client interpolation window so each glide finishes as the next update lands.
             .updateInterval(3)
             .build(key);

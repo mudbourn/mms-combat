@@ -44,6 +44,11 @@ dependencies {
     modCompileOnly files("libs/justenoughguns-fabric-1.4.0.jar")
     // GeckoLib is JEG's own required dependency, provided the same way.
     modCompileOnly files("libs/geckolib-fabric-1.21.11-5.4.5.jar")
+    // Client-only Mojang library that Bren logs through on the server tick; bundle it so a
+    // dedicated server has the class and does not crash, and add it to the dev server run's
+    // library set, which loom otherwise strips of client-only libraries.
+    include "com.mojang:text2speech:1.18.11"
+    minecraftServerRuntimeLibraries "com.mojang:text2speech:1.18.11"
 }
 
 tasks.withType(JavaCompile).configureEach {
@@ -75,5 +80,40 @@ processResources {
 jar {
     from("LICENSE") {
         rename { "${it}_${project.base.archivesName.get()}" }
+    }
+}
+
+// Sibling mms-origins is a runtime-only mod loaded from run/mods, not a build dependency.
+def mmsSiblingRoot = providers.gradleProperty("mmsSiblingRoot").getOrElse("..")
+def originsDir = file("$mmsSiblingRoot/mms-origins")
+def originsWrapper = System.getProperty("os.name").toLowerCase().contains("win") ? "gradlew.bat" : "./gradlew"
+
+// Rebuilds the sibling mod so the dev runs never load a hand-copied, stale jar.
+tasks.register("buildOriginsMod", Exec) {
+    onlyIf { originsDir.exists() }
+    workingDir originsDir
+    commandLine originsWrapper, "build"
+    inputs.dir(file("$originsDir/src"))
+    outputs.dir(file("$originsDir/build/libs"))
+}
+
+// Replaces the mms-origins jar under run/mods with the one just built.
+tasks.register("refreshOriginsMod", Copy) {
+    dependsOn "buildOriginsMod"
+    onlyIf { originsDir.exists() }
+    doFirst {
+        delete fileTree("run/mods") { include "mms-origins-*.jar" }
+    }
+    from(file("$originsDir/build/libs")) {
+        include "mms-origins-*.jar"
+        exclude "*-sources.jar"
+    }
+    into file("run/mods")
+}
+
+// Refresh the sibling mod before any dev run so edits there take effect without a manual copy.
+["runServer", "runClientAlice", "runClientBob"].each { runName ->
+    tasks.named(runName) {
+        dependsOn "refreshOriginsMod"
     }
 }

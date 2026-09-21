@@ -56,6 +56,10 @@ public class KillstreakCrateEntity extends Entity implements MenuProvider {
     private static final int COLLECT_BUFF_TICKS = 100;
     // Length of the fade-and-tween the crate plays on arrival and again before it is removed.
     public static final int ANIM_TICKS = 12;
+    // The interact box, pinned to where the renderer floats the model above the entity origin so a click lands on the crate the player sees.
+    private static final double BOX_HALF_WIDTH = 1.0;
+    private static final double BOX_BOTTOM = 0.35;
+    private static final double BOX_TOP = 1.2;
 
     // Synced so the client can play the leaving animation before the server actually discards the crate.
     private static final EntityDataAccessor<Boolean> DESPAWNING =
@@ -166,14 +170,17 @@ public class KillstreakCrateEntity extends Entity implements MenuProvider {
         level.playSound(null, center.x, center.y, center.z,
             SoundEvents.GENERIC_EXPLODE, SoundSource.BLOCKS, 4.0F, 1.0F);
         level.sendParticles(ParticleTypes.EXPLOSION_EMITTER, center.x, center.y, center.z, 1, 0.0, 0.0, 0.0, 0.0);
-        Player ownerPlayer = this.owner == null ? null : level.getPlayerByUUID(this.owner);
-        DamageSource source = level.damageSources().explosion(this, ownerPlayer);
+        // An unattributed blast so it reads as the crate detonating, not the owner attacking, and so it is never suppressed as unprovoked PvP.
+        DamageSource source = level.damageSources().explosion(this, null);
         AABB area = this.getBoundingBox().inflate(EXPLOSION_RADIUS);
         for (LivingEntity victim : level.getEntitiesOfClass(LivingEntity.class, area)) {
             if (this.owner != null && this.owner.equals(victim.getUUID())) {
                 continue;
             }
-            double distance = Math.sqrt(victim.distanceToSqr(center));
+            // Horizontal distance, so a player standing under the floating crate still takes the crowding punishment.
+            double dx = victim.getX() - center.x;
+            double dz = victim.getZ() - center.z;
+            double distance = Math.sqrt(dx * dx + dz * dz);
             if (distance > EXPLOSION_RADIUS) {
                 continue;
             }
@@ -249,6 +256,18 @@ public class KillstreakCrateEntity extends Entity implements MenuProvider {
     @Override
     public boolean isPickable() {
         return !this.isRemoved();
+    }
+
+    // Lifts the bounding box off the entity origin to wrap the floating model, so the interact target matches the rendered crate.
+    @Override
+    protected AABB makeBoundingBox(Vec3 pos) {
+        return new AABB(
+            pos.x - BOX_HALF_WIDTH,
+            pos.y + BOX_BOTTOM,
+            pos.z - BOX_HALF_WIDTH,
+            pos.x + BOX_HALF_WIDTH,
+            pos.y + BOX_TOP,
+            pos.z + BOX_HALF_WIDTH);
     }
 
     @Override

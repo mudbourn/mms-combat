@@ -63,9 +63,14 @@ public final class CombatHudRenderer implements HudElement {
             SOURCE_SIZE,
             SOURCE_SIZE);
 
-        Component label = CombatHudState.inZone()
-            ? Component.literal("In Combat Zone")
-            : Component.literal(Integer.toString(CombatHudState.secondsLeft()) + "s");
+        Component label;
+        if (CombatHudState.inZone()) {
+            label = Component.literal("In Combat Zone");
+        } else if (CombatHudState.secondsLeft() < 0) {
+            label = Component.literal("PvP On");
+        } else {
+            label = Component.literal(CombatHudState.secondsLeft() + "s");
+        }
         int textY = iconY + ICON_SIZE / 2 - font.lineHeight / 2;
         context.drawString(font, label, textX, textY, TEXT_COLOR, true);
     }
