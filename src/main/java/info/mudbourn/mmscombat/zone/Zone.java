@@ -93,6 +93,17 @@ public final class Zone {
         return x >= minX && x <= maxX && z >= minZ && z <= maxZ;
     }
 
+    // Whether this position sits within the zone footprint at or below its ceiling, so the floor and terrain beneath the zone are shielded too.
+    public boolean shieldsColumn(String dim, int x, int y, int z) {
+        if (!dimension.equals(dim) || y > maxY) {
+            return false;
+        }
+        if (isPolygon()) {
+            return containsColumn(x, z);
+        }
+        return x >= minX && x <= maxX && z >= minZ && z <= maxZ;
+    }
+
     // Ray-casts the block centre against the polygon edges in the XZ plane.
     private boolean containsColumn(int x, int z) {
         double px = x + 0.5;

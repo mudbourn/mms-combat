@@ -28,13 +28,24 @@ public final class KillstreakWeapons {
     // ks-support tier ids stamped into custom_data.streak_item, kept so the existing contract-purge datapack still recognises these stacks.
     private static final int STREAK_ITEM_GUN = 1;
     private static final int STREAK_ITEM_MJOLNIR = 2;
+    private static final int STREAK_ITEM_SCYTHE = 3;
+    private static final int STREAK_ITEM_HAMMER = 4;
+    private static final int STREAK_ITEM_TRIDENT = 5;
 
     private static final Map<String, Function<ServerPlayer, List<ItemStack>>> REGISTRY = Map.of(
         "mjolnir", KillstreakWeapons::buildMjolnir,
-        "assault_rifle", KillstreakWeapons::buildAssaultRifle
+        "assault_rifle", KillstreakWeapons::buildAssaultRifle,
+        "scythe", KillstreakWeapons::buildScythe,
+        "hammer", KillstreakWeapons::buildHammer,
+        "trident", KillstreakWeapons::buildTrident
     );
 
     private KillstreakWeapons() {
+    }
+
+    // Whether a weapon key has a builder registered.
+    public static boolean isDefined(String key) {
+        return REGISTRY.containsKey(key);
     }
 
     // Resolves a weapon key to its stacks, or an empty list when the key or a required item is missing.
@@ -64,6 +75,66 @@ public final class KillstreakWeapons {
             line("Thor's Recognition", ChatFormatting.AQUA),
             line("Contract-bound. Vanishes on death.", ChatFormatting.DARK_GRAY));
         return List.of(mace);
+    }
+
+    // Reaper's Scythe: a soul-reaping netherite hoe bound to its owner.
+    private static List<ItemStack> buildScythe(ServerPlayer owner) {
+        ItemStack scythe = stack("minecraft:netherite_hoe", 1, STREAK_ITEM_SCYTHE, owner);
+        if (scythe.isEmpty()) {
+            return List.of();
+        }
+        name(scythe, "Reaper's Scythe", ChatFormatting.DARK_PURPLE, true);
+        scythe.set(DataComponents.ITEM_MODEL, Identifier.tryParse("killstreak:scythe"));
+        enchant(scythe, owner, "sharpness", 5);
+        enchant(scythe, owner, "looting", 3);
+        enchant(scythe, owner, "fire_aspect", 2);
+        enchant(scythe, owner, "unbreaking", 3);
+        enchant(scythe, owner, "mending", 1);
+        enchant(scythe, owner, "vanishing_curse", 1);
+        lore(scythe,
+            line("Harvest of Souls", ChatFormatting.DARK_PURPLE),
+            line("Contract-bound. Vanishes on death.", ChatFormatting.DARK_GRAY));
+        return List.of(scythe);
+    }
+
+    // Earthshaker: a heavy smashing mace bound to its owner.
+    private static List<ItemStack> buildHammer(ServerPlayer owner) {
+        ItemStack hammer = stack("minecraft:mace", 1, STREAK_ITEM_HAMMER, owner);
+        if (hammer.isEmpty()) {
+            return List.of();
+        }
+        name(hammer, "Earthshaker", ChatFormatting.GOLD, true);
+        hammer.set(DataComponents.ITEM_MODEL, Identifier.tryParse("killstreak:hammer"));
+        enchant(hammer, owner, "density", 5);
+        enchant(hammer, owner, "breach", 4);
+        enchant(hammer, owner, "wind_burst", 3);
+        enchant(hammer, owner, "fire_aspect", 2);
+        enchant(hammer, owner, "unbreaking", 3);
+        enchant(hammer, owner, "vanishing_curse", 1);
+        lore(hammer,
+            line("The Mountain's Fury", ChatFormatting.GOLD),
+            line("Contract-bound. Vanishes on death.", ChatFormatting.DARK_GRAY));
+        return List.of(hammer);
+    }
+
+    // Poseidon's Wrath: a storm-calling trident bound to its owner.
+    private static List<ItemStack> buildTrident(ServerPlayer owner) {
+        ItemStack trident = stack("minecraft:trident", 1, STREAK_ITEM_TRIDENT, owner);
+        if (trident.isEmpty()) {
+            return List.of();
+        }
+        name(trident, "Poseidon's Wrath", ChatFormatting.AQUA, true);
+        trident.set(DataComponents.ITEM_MODEL, Identifier.tryParse("killstreak:trident"));
+        enchant(trident, owner, "impaling", 5);
+        enchant(trident, owner, "loyalty", 3);
+        enchant(trident, owner, "channeling", 1);
+        enchant(trident, owner, "unbreaking", 3);
+        enchant(trident, owner, "mending", 1);
+        enchant(trident, owner, "vanishing_curse", 1);
+        lore(trident,
+            line("Tide of the Deep", ChatFormatting.AQUA),
+            line("Contract-bound. Vanishes on death.", ChatFormatting.DARK_GRAY));
+        return List.of(trident);
     }
 
     // Assault Rifle: a JEG gun loaded to 30 with a 60-round reserve, both owner-bound.

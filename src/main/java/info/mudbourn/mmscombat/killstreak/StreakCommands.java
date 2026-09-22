@@ -7,6 +7,7 @@ import com.mojang.brigadier.context.CommandContext;
 import info.mudbourn.mmscombat.config.CombatConfig;
 import info.mudbourn.mmscombat.config.CombatConfig.RewardEntry;
 import info.mudbourn.mmscombat.config.CombatConfig.StreakTier;
+import info.mudbourn.mmscombat.killstreak.weapon.KillstreakWeapons;
 import java.util.Comparator;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
@@ -41,6 +42,14 @@ public final class StreakCommands {
                                     ctx,
                                     IntegerArgumentType.getInteger(ctx, "count"),
                                     IntegerArgumentType.getInteger(ctx, "weight"))))))))
+            .then(Commands.literal("addweapon")
+                .then(Commands.argument("kills", IntegerArgumentType.integer(1))
+                    .then(Commands.argument("weapon", StringArgumentType.string())
+                        .executes(ctx -> addWeapon(ctx, 1))
+                        .then(Commands.argument("weight", IntegerArgumentType.integer(1))
+                            .executes(ctx -> addWeapon(
+                                ctx,
+                                IntegerArgumentType.getInteger(ctx, "weight")))))))
             .then(Commands.literal("removeitem")
                 .then(Commands.argument("kills", IntegerArgumentType.integer(1))
                     .then(Commands.argument("index", IntegerArgumentType.integer(0))
@@ -120,6 +129,26 @@ public final class StreakCommands {
         ctx.getSource().sendSuccess(
             () -> Component.literal("Added " + item + " x" + count + " w" + weight
                 + " to the " + kills + "-kill tier." + note), true);
+        return 1;
+    }
+
+    private static int addWeapon(CommandContext<CommandSourceStack> ctx, int weight) {
+        int kills = IntegerArgumentType.getInteger(ctx, "kills");
+        String weapon = StringArgumentType.getString(ctx, "weapon");
+        if (!KillstreakWeapons.isDefined(weapon)) {
+            ctx.getSource().sendFailure(Component.literal("Unknown weapon key: " + weapon));
+            return 0;
+        }
+        StreakTier tier = findTier(kills);
+        if (tier == null) {
+            ctx.getSource().sendFailure(Component.literal("No tier at " + kills + " kills; add one first."));
+            return 0;
+        }
+        tier.rewardTable.add(RewardEntry.weapon(weapon, weight));
+        sortAndSave();
+        ctx.getSource().sendSuccess(
+            () -> Component.literal("Added weapon:" + weapon + " w" + weight
+                + " to the " + kills + "-kill tier."), true);
         return 1;
     }
 

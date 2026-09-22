@@ -1,6 +1,7 @@
 package info.mudbourn.mmscombat.zone.mixin;
 
 import info.mudbourn.mmscombat.zone.ZoneStore;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import net.minecraft.core.BlockPos;
@@ -13,7 +14,7 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
 
-// Drops every block an explosion would break or set alight when the blast originates inside a blockExplosionShield zone, so it still hurts entities but never breaks terrain anywhere.
+// Shields terrain from explosions: a blast centred inside a blockExplosionShield zone breaks nothing anywhere, and any blast from outside still cannot break blocks that lie inside such a zone.
 @Mixin(ServerExplosion.class)
 public class ExplosionShieldMixin {
 
@@ -39,6 +40,15 @@ public class ExplosionShieldMixin {
         if (ZoneStore.shieldsExplosion(this.level, originPos)) {
             return Collections.emptyList();
         }
-        return positions;
+        List<BlockPos> kept = new ArrayList<>(positions.size());
+        boolean shielded = false;
+        for (BlockPos pos : positions) {
+            if (ZoneStore.shieldsColumn(this.level, pos)) {
+                shielded = true;
+            } else {
+                kept.add(pos);
+            }
+        }
+        return shielded ? kept : positions;
     }
 }
