@@ -193,11 +193,10 @@ public final class ZoneCommands {
     // Draws a particle outline of every nearby zone in the caller's dimension so its bounds are visible in world.
     private static int showZones(CommandContext<CommandSourceStack> ctx) {
         ServerLevel level = ctx.getSource().getLevel();
-        String dim = level.dimension().identifier().toString();
         BlockPos origin = BlockPos.containing(ctx.getSource().getPosition());
         int shown = 0;
         for (Zone zone : ZoneStore.all()) {
-            if (zone.dimension.equals(dim) && nearOrigin(zone, origin)) {
+            if (zone.inDimension(level.dimension()) && nearOrigin(zone, origin)) {
                 outline(level, zone);
                 shown++;
             }

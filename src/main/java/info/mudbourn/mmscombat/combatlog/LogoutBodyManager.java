@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -22,6 +23,7 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.decoration.Mannequin;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.ResolvableProfile;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.gamerules.GameRules;
 
 // The vulnerable logout body: a killable mannequin left when a flagged player logs out, wearing their skin, size, and gear and holding a snapshot of their inventory. Killed in time, the snapshot drops and the player loses it on next login; left to expire, it vanishes and the player keeps everything.
@@ -94,7 +96,7 @@ public final class LogoutBodyManager {
         bodies.put(player.getUUID(), new Body(
             body.getUUID(),
             snapshot,
-            level.dimension().identifier().toString(),
+            level.dimension(),
             player.getX(),
             player.getY(),
             player.getZ(),
@@ -124,7 +126,7 @@ public final class LogoutBodyManager {
         while (it.hasNext()) {
             Map.Entry<UUID, Body> entry = it.next();
             Body body = entry.getValue();
-            ServerLevel level = resolveLevel(server, body.dimension);
+            ServerLevel level = server.getLevel(body.dimension);
             if (level == null) {
                 continue;
             }
@@ -158,7 +160,7 @@ public final class LogoutBodyManager {
                 continue;
             }
             Body body = bodies.get(entry.getKey());
-            ServerLevel level = body == null ? null : resolveLevel(server, body.dimension);
+            ServerLevel level = body == null ? null : server.getLevel(body.dimension);
             Mannequin mannequin = level != null
                 && level.getEntity(body.bodyId) instanceof Mannequin found ? found : null;
             if (mannequin != null) {
@@ -219,16 +221,7 @@ public final class LogoutBodyManager {
         }
     }
 
-    private ServerLevel resolveLevel(MinecraftServer server, String dimension) {
-        for (ServerLevel level : server.getAllLevels()) {
-            if (level.dimension().identifier().toString().equals(dimension)) {
-                return level;
-            }
-        }
-        return null;
-    }
-
-    private record Body(UUID bodyId, List<ItemStack> snapshot, String dimension,
+    private record Body(UUID bodyId, List<ItemStack> snapshot, ResourceKey<Level> dimension,
                         double x, double y, double z, long expiry, boolean persistent) {
     }
 }

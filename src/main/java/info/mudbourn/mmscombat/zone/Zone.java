@@ -3,6 +3,10 @@ package info.mudbourn.mmscombat.zone;
 import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.world.level.Level;
 
 // One combat zone: a named region in a single dimension plus the flags that govern what happens inside it. The footprint is an axis-aligned box, or an extruded polygon when edge points are set.
 public final class Zone {
@@ -19,6 +23,8 @@ public final class Zone {
     public boolean flagCombatOnEnter = true;
     public boolean suppressNaturalSpawns = true;
     public boolean blockExplosionShield = false;
+    private transient ResourceKey<Level> dimensionKey;
+    private transient boolean dimensionResolved;
 
     public Zone() {
     }
@@ -83,25 +89,26 @@ public final class Zone {
         this.maxZ = highZ;
     }
 
-    public boolean contains(String dim, int x, int y, int z) {
-        if (!dimension.equals(dim) || y < minY || y > maxY) {
-            return false;
+    // Whether this zone lies in the given dimension, parsing the saved id only once.
+    public boolean inDimension(ResourceKey<Level> dim) {
+        if (!dimensionResolved) {
+            Identifier id = dimension == null ? null : Identifier.tryParse(dimension);
+            dimensionKey = id == null ? null : ResourceKey.create(Registries.DIMENSION, id);
+            dimensionResolved = true;
         }
-        if (isPolygon()) {
-            return containsColumn(x, z);
-        }
-        return x >= minX && x <= maxX && z >= minZ && z <= maxZ;
+        return dim.equals(dimensionKey);
+    }
+
+    public boolean contains(ResourceKey<Level> dim, int x, int y, int z) {
+        return y >= minY && shieldsColumn(dim, x, y, z);
     }
 
     // Whether this position sits within the zone footprint at or below its ceiling, so the floor and terrain beneath the zone are shielded too.
-    public boolean shieldsColumn(String dim, int x, int y, int z) {
-        if (!dimension.equals(dim) || y > maxY) {
+    public boolean shieldsColumn(ResourceKey<Level> dim, int x, int y, int z) {
+        if (y > maxY || x < minX || x > maxX || z < minZ || z > maxZ || !inDimension(dim)) {
             return false;
         }
-        if (isPolygon()) {
-            return containsColumn(x, z);
-        }
-        return x >= minX && x <= maxX && z >= minZ && z <= maxZ;
+        return !isPolygon() || containsColumn(x, z);
     }
 
     // Ray-casts the block centre against the polygon edges in the XZ plane.

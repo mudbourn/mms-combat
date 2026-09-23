@@ -1,11 +1,14 @@
 package info.mudbourn.mmscombat.zone.mixin;
 
+import info.mudbourn.mmscombat.zone.Zone;
 import info.mudbourn.mmscombat.zone.ZoneStore;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import net.minecraft.core.BlockPos;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.ServerExplosion;
 import net.minecraft.world.phys.Vec3;
 import org.spongepowered.asm.mixin.Final;
@@ -35,20 +38,33 @@ public class ExplosionShieldMixin {
         if (positions.isEmpty()) {
             return positions;
         }
+        List<Zone> shields = ZoneStore.explosionShields(this.level);
+        if (shields.isEmpty()) {
+            return positions;
+        }
+        ResourceKey<Level> dim = this.level.dimension();
         Vec3 origin = center();
         BlockPos originPos = BlockPos.containing(origin.x, origin.y, origin.z);
-        if (ZoneStore.shieldsExplosion(this.level, originPos)) {
-            return Collections.emptyList();
+        for (Zone zone : shields) {
+            if (zone.contains(dim, originPos.getX(), originPos.getY(), originPos.getZ())) {
+                return Collections.emptyList();
+            }
         }
         List<BlockPos> kept = new ArrayList<>(positions.size());
-        boolean shielded = false;
         for (BlockPos pos : positions) {
-            if (ZoneStore.shieldsColumn(this.level, pos)) {
-                shielded = true;
-            } else {
+            if (!mmsCombat$shielded(shields, dim, pos)) {
                 kept.add(pos);
             }
         }
-        return shielded ? kept : positions;
+        return kept.size() == positions.size() ? positions : kept;
+    }
+
+    private static boolean mmsCombat$shielded(List<Zone> shields, ResourceKey<Level> dim, BlockPos pos) {
+        for (Zone zone : shields) {
+            if (zone.shieldsColumn(dim, pos.getX(), pos.getY(), pos.getZ())) {
+                return true;
+            }
+        }
+        return false;
     }
 }

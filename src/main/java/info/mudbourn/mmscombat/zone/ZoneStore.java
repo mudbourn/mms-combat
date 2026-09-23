@@ -10,8 +10,10 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.core.BlockPos;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.storage.LevelResource;
 
 // The per-save registry of zones, kept in memory and mirrored to a JSON file in the world folder so it survives restarts and never leaks between saves.
@@ -89,33 +91,30 @@ public final class ZoneStore {
         return matches(level, pos, false);
     }
 
-    // Whether this position sits in a zone that shields terrain from explosions.
-    public static boolean shieldsExplosion(ServerLevel level, BlockPos pos) {
-        String dim = level.dimension().identifier().toString();
+    // The explosion-shield zones in this level's dimension, empty when the level has none.
+    public static List<Zone> explosionShields(ServerLevel level) {
+        List<Zone> shields = List.of();
         for (Zone zone : ZONES) {
-            if (zone.blockExplosionShield && zone.contains(dim, pos.getX(), pos.getY(), pos.getZ())) {
-                return true;
+            if (zone.blockExplosionShield && zone.inDimension(level.dimension())) {
+                if (shields.isEmpty()) {
+                    shields = new ArrayList<>();
+                }
+                shields.add(zone);
             }
         }
-        return false;
-    }
-
-    // Whether this position sits within a shield zone's footprint at or below its ceiling, so terrain beneath the zone is protected too.
-    public static boolean shieldsColumn(ServerLevel level, BlockPos pos) {
-        String dim = level.dimension().identifier().toString();
-        for (Zone zone : ZONES) {
-            if (zone.blockExplosionShield && zone.shieldsColumn(dim, pos.getX(), pos.getY(), pos.getZ())) {
-                return true;
-            }
-        }
-        return false;
+        return shields;
     }
 
     private static boolean matches(ServerLevel level, BlockPos pos, boolean combat) {
-        String dim = level.dimension().identifier().toString();
+        if (ZONES.isEmpty()) {
+            return false;
+        }
+        ResourceKey<Level> dim = level.dimension();
+        int x = pos.getX();
+        int y = pos.getY();
+        int z = pos.getZ();
         for (Zone zone : ZONES) {
-            if (zone.contains(dim, pos.getX(), pos.getY(), pos.getZ())
-                && (combat ? zone.flagCombatOnEnter : zone.suppressNaturalSpawns)) {
+            if ((combat ? zone.flagCombatOnEnter : zone.suppressNaturalSpawns) && zone.contains(dim, x, y, z)) {
                 return true;
             }
         }

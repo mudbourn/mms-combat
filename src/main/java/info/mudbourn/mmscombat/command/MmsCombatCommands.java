@@ -145,10 +145,9 @@ public final class MmsCombatCommands {
         if (!(player.level() instanceof ServerLevel level)) {
             return "none";
         }
-        String dim = level.dimension().identifier().toString();
         StringBuilder names = new StringBuilder();
         for (var zone : ZoneStore.all()) {
-            if (zone.contains(dim, player.getBlockX(), player.getBlockY(), player.getBlockZ())) {
+            if (zone.contains(level.dimension(), player.getBlockX(), player.getBlockY(), player.getBlockZ())) {
                 names.append(names.isEmpty() ? "" : ",").append(zone.name);
             }
         }
