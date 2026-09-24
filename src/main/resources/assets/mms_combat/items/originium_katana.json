@@ -1,0 +1,122 @@
+{
+  "model": {
+    "type": "minecraft:select",
+    "property": "minecraft:display_context",
+    "cases": [
+      {
+        "when": [
+          "gui",
+          "ground",
+          "fixed"
+        ],
+        "model": {
+          "type": "minecraft:model",
+          "model": "mms_combat:item/originium_katana_inventory"
+        }
+      }
+    ],
+    "fallback": {
+      "type": "minecraft:range_dispatch",
+      "property": "mms_combat:elapsed",
+      "entries": [
+        {
+          "threshold": 2,
+          "model": {
+            "type": "mms_render_common:geo",
+            "base": "mms_combat:item/originium_katana_held",
+            "geo": "mms_combat:geo/item/originium_katana.geo.json",
+            "texture": "mms_combat:textures/item/originium_katana/originium_katana_1.png"
+          }
+        },
+        {
+          "threshold": 4,
+          "model": {
+            "type": "mms_render_common:geo",
+            "base": "mms_combat:item/originium_katana_held",
+            "geo": "mms_combat:geo/item/originium_katana.geo.json",
+            "texture": "mms_combat:textures/item/originium_katana/originium_katana_2.png"
+          }
+        },
+        {
+          "threshold": 6,
+          "model": {
+            "type": "mms_render_common:geo",
+            "base": "mms_combat:item/originium_katana_held",
+            "geo": "mms_combat:geo/item/originium_katana.geo.json",
+            "texture": "mms_combat:textures/item/originium_katana/originium_katana_3.png"
+          }
+        },
+        {
+          "threshold": 8,
+          "model": {
+            "type": "mms_render_common:geo",
+            "base": "mms_combat:item/originium_katana_held",
+            "geo": "mms_combat:geo/item/originium_katana.geo.json",
+            "texture": "mms_combat:textures/item/originium_katana/originium_katana_4.png"
+          }
+        },
+        {
+          "threshold": 10,
+          "model": {
+            "type": "mms_render_common:geo",
+            "base": "mms_combat:item/originium_katana_held",
+            "geo": "mms_combat:geo/item/originium_katana.geo.json",
+            "texture": "mms_combat:textures/item/originium_katana/originium_katana_5.png"
+          }
+        },
+        {
+          "threshold": 12,
+          "model": {
+            "type": "mms_render_common:geo",
+            "base": "mms_combat:item/originium_katana_held",
+            "geo": "mms_combat:geo/item/originium_katana.geo.json",
+            "texture": "mms_combat:textures/item/originium_katana/originium_katana_6.png"
+          }
+        },
+        {
+          "threshold": 14,
+          "model": {
+            "type": "mms_render_common:geo",
+            "base": "mms_combat:item/originium_katana_held",
+            "geo": "mms_combat:geo/item/originium_katana.geo.json",
+            "texture": "mms_combat:textures/item/originium_katana/originium_katana_7.png"
+          }
+        },
+        {
+          "threshold": 16,
+          "model": {
+            "type": "mms_render_common:geo",
+            "base": "mms_combat:item/originium_katana_held",
+            "geo": "mms_combat:geo/item/originium_katana.geo.json",
+            "texture": "mms_combat:textures/item/originium_katana/originium_katana_8.png"
+          }
+        },
+        {
+          "threshold": 18,
+          "model": {
+            "type": "mms_render_common:geo",
+            "base": "mms_combat:item/originium_katana_held",
+            "geo": "mms_combat:geo/item/originium_katana.geo.json",
+            "texture": "mms_combat:textures/item/originium_katana/originium_katana_9.png"
+          }
+        },
+        {
+          "threshold": 20,
+          "model": {
+            "type": "mms_render_common:geo",
+            "base": "mms_combat:item/originium_katana_held",
+            "geo": "mms_combat:geo/item/originium_katana.geo.json",
+            "texture": "mms_combat:textures/item/originium_katana/originium_katana_10.png"
+          }
+        }
+      ],
+      "fallback": {
+        "type": "mms_render_common:geo",
+        "base": "mms_combat:item/originium_katana_held",
+        "geo": "mms_combat:geo/item/originium_katana.geo.json",
+        "texture": "mms_combat:textures/item/originium_katana/originium_katana_0.png"
+      }
+    }
+  },
+  "hand_animation_on_swap": false
+}

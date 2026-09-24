@@ -3,7 +3,7 @@
   "id": "mms_combat",
   "version": "${version}",
   "name": "MMS Combat",
-  "description": "Combat logging, combat zones with spawn control, an in-combat HUD indicator, and killstreak weapon rewards for MMSLive01.",
+  "description": "Combat logging, combat zones with spawn control, an in-combat HUD indicator, and killstreak weapon rewards for MMSLive01, and the Armory of Destiny melee weapons.",
   "environment": "*",
   "entrypoints": {
     "main": [
@@ -14,7 +14,13 @@
     ]
   },
   "mixins": [
-    "mms_combat.zone.mixins.json"
+    "mms_combat.zone.mixins.json",
+    "mms_combat.armory.mixins.json",
+    "mms_combat.jeg.mixins.json",
+    {
+      "config": "mms_combat.armory.client.mixins.json",
+      "environment": "client"
+    }
   ],
   "accessWidener": "mms_combat.accesswidener",
   "depends": {
@@ -22,7 +28,8 @@
     "minecraft": "~1.21.11",
     "java": ">=21",
     "fabric-api": "*",
-    "mms_render_common": "*"
+    "mms_render_common": "*",
+    "bettercombat": ">=3.1.0"
   },
   "suggests": {
     "justenoughguns": "*"

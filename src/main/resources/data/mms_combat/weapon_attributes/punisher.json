@@ -1,0 +1,6 @@
+{
+  "parent": "bettercombat:hammer",
+  "attributes": {
+    "two_handed": true
+  }
+}

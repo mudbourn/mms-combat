@@ -33,17 +33,30 @@ repositories {
     maven { url "https://api.modrinth.com/maven" }
 }
 
+// Required mods that ship nested jars, loaded from the run mods folders where the loader unpacks them.
+configurations {
+    runtimeMods {
+        transitive = false
+    }
+}
+
 dependencies {
     minecraft "com.mojang:minecraft:${project.minecraft_version}"
     mappings loom.officialMojangMappings()
     modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
     modImplementation "net.fabricmc.fabric-api:fabric-api:0.141.4+1.21.11"
     modImplementation "info.mudbourn:mms-render-common:${project.render_common_version}"
-    // Just Enough Guns is the source of the ranged killstreak rewards; local jar
-    // (no Maven), compile-only; the runtime copy lives in the target instance.
+    runtimeMods "maven.modrinth:better-combat:${project.better_combat_version}"
+    runtimeMods "maven.modrinth:player-animation-library:${project.player_animation_library_version}"
+    // Just Enough Guns is the source of the ranged killstreak rewards; local jar (no Maven),
+    // compiled against and copied into the dev run mods folders but not declared as a dependency of the mod.
     modCompileOnly files("libs/justenoughguns-fabric-1.4.0.jar")
+    runtimeMods files("libs/justenoughguns-fabric-1.4.0.jar")
     // GeckoLib is JEG's own required dependency, provided the same way.
     modCompileOnly files("libs/geckolib-fabric-1.21.11-5.4.5.jar")
+    runtimeMods files("libs/geckolib-fabric-1.21.11-5.4.5.jar")
+    // Night Config core, which JEG's bundled toml jar needs but JEG does not ship.
+    localRuntime "com.electronwill.night-config:core:3.8.1"
     // Client-only Mojang library that Bren logs through on the server tick; bundle it so a
     // dedicated server has the class and does not crash, and add it to the dev server run's
     // library set, which loom otherwise strips of client-only libraries.
@@ -111,9 +124,22 @@ tasks.register("refreshOriginsMod", Copy) {
     into file("run/mods")
 }
 
+// Copies the required runtime mods into every dev run's mods folder.
+tasks.register("syncRuntimeMods") {
+    inputs.files(configurations.runtimeMods)
+    doLast {
+        ["run/mods", "run/alice/mods", "run/bob/mods"].each { dir ->
+            copy {
+                from configurations.runtimeMods
+                into file(dir)
+            }
+        }
+    }
+}
+
 // Refresh the sibling mod before any dev run so edits there take effect without a manual copy.
 ["runServer", "runClientAlice", "runClientBob"].each { runName ->
     tasks.named(runName) {
-        dependsOn "refreshOriginsMod"
+        dependsOn "refreshOriginsMod", "syncRuntimeMods"
     }
 }

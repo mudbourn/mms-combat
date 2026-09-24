@@ -1,0 +1,13 @@
+{
+  "required": true,
+  "package": "info.mudbourn.mmscombat.compat.jeg",
+  "plugin": "info.mudbourn.mmscombat.compat.jeg.JegMixinPlugin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "BulletEntityMixin",
+    "GrenadeEntityMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

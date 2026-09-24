@@ -1,0 +1,25 @@
+{
+  "model": {
+    "type": "minecraft:select",
+    "property": "minecraft:display_context",
+    "cases": [
+      {
+        "when": [
+          "gui",
+          "ground",
+          "fixed"
+        ],
+        "model": {
+          "type": "minecraft:model",
+          "model": "mms_combat:item/crucible_inactive_inventory"
+        }
+      }
+    ],
+    "fallback": {
+      "type": "mms_render_common:geo",
+      "base": "mms_combat:item/crucible_inactive_held",
+      "geo": "mms_combat:geo/item/crucible_inactive.geo.json",
+      "texture": "mms_combat:textures/item/crucible_inactive.png"
+    }
+  }
+}

@@ -10,5 +10,128 @@
     "sounds": [
       "mms_combat:outcombat"
     ]
+  },
+  "murasama_insert": {
+    "subtitle": "subtitles.mms_combat.murasama_insert",
+    "sounds": [
+      "mms_combat:murasama_insert_1",
+      "mms_combat:murasama_insert_2"
+    ]
+  },
+  "murasama_shoot": {
+    "subtitle": "subtitles.mms_combat.murasama_shoot",
+    "sounds": [
+      "mms_combat:murasama_shoot_1",
+      "mms_combat:murasama_shoot_2"
+    ]
+  },
+  "murasama_special_hit": {
+    "subtitle": "subtitles.mms_combat.murasama_special_hit",
+    "sounds": [
+      "mms_combat:murasama_special_hit_1",
+      "mms_combat:murasama_special_hit_2"
+    ]
+  },
+  "murasama_sheath": {
+    "subtitle": "subtitles.mms_combat.murasama_sheath",
+    "sounds": [
+      "mms_combat:murasama_sheath_1",
+      "mms_combat:murasama_sheath_2",
+      "mms_combat:murasama_sheath_3",
+      "mms_combat:murasama_sheath_4"
+    ]
+  },
+  "originium_catalyst_activate": {
+    "subtitle": "subtitles.mms_combat.originium_catalyst_activate",
+    "sounds": [
+      "mms_combat:originium_catalyst_activate_1",
+      "mms_combat:originium_catalyst_activate_2"
+    ]
+  },
+  "punisher_activate": {
+    "subtitle": "subtitles.mms_combat.punisher_activate",
+    "sounds": [
+      "mms_combat:punisher_activate"
+    ]
+  },
+  "punisher_deactivate": {
+    "subtitle": "subtitles.mms_combat.punisher_deactivate",
+    "sounds": [
+      "mms_combat:punisher_deactivate"
+    ]
+  },
+  "punisher_attack": {
+    "subtitle": "subtitles.mms_combat.punisher_attack",
+    "sounds": [
+      "mms_combat:punisher_attack_1",
+      "mms_combat:punisher_attack_2",
+      "mms_combat:punisher_attack_3",
+      "mms_combat:punisher_attack_4",
+      "mms_combat:punisher_attack_5",
+      "mms_combat:punisher_attack_6",
+      "mms_combat:punisher_attack_7",
+      "mms_combat:punisher_attack_8",
+      "mms_combat:punisher_attack_9"
+    ]
+  },
+  "bloodletter_activate": {
+    "subtitle": "subtitles.mms_combat.bloodletter_activate",
+    "sounds": [
+      "mms_combat:bloodletter_activate"
+    ]
+  },
+  "bloodletter_deactivate": {
+    "subtitle": "subtitles.mms_combat.bloodletter_deactivate",
+    "sounds": [
+      "mms_combat:bloodletter_deactivate"
+    ]
+  },
+  "bloodletter_hit": {
+    "subtitle": "subtitles.mms_combat.bloodletter_hit",
+    "sounds": [
+      "mms_combat:bloodletter_hit_1",
+      "mms_combat:bloodletter_hit_2",
+      "mms_combat:bloodletter_hit_3",
+      "mms_combat:bloodletter_hit_4"
+    ]
+  },
+  "crucible_activate": {
+    "subtitle": "subtitles.mms_combat.crucible_activate",
+    "sounds": [
+      "mms_combat:crucible_activate"
+    ]
+  },
+  "crucible_deactivate": {
+    "subtitle": "subtitles.mms_combat.crucible_deactivate",
+    "sounds": [
+      "mms_combat:crucible_deactivate"
+    ]
+  },
+  "crucible_swing": {
+    "subtitle": "subtitles.mms_combat.crucible_swing",
+    "sounds": [
+      "mms_combat:crucible_swing_1",
+      "mms_combat:crucible_swing_2"
+    ]
+  },
+  "edge_of_existence_activate": {
+    "subtitle": "subtitles.mms_combat.edge_of_existence_activate",
+    "sounds": [
+      "mms_combat:edge_of_existence_activate"
+    ]
+  },
+  "edge_of_existence_deactivate": {
+    "subtitle": "subtitles.mms_combat.edge_of_existence_deactivate",
+    "sounds": [
+      "mms_combat:edge_of_existence_deactivate"
+    ]
+  },
+  "dragon_slayer_swing": {
+    "subtitle": "subtitles.mms_combat.dragon_slayer_swing",
+    "sounds": [
+      "mms_combat:dragon_slayer_swing_1",
+      "mms_combat:dragon_slayer_swing_2",
+      "mms_combat:dragon_slayer_swing_3"
+    ]
   }
 }

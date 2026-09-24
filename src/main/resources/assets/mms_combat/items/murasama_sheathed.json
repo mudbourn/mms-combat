@@ -1,0 +1,25 @@
+{
+  "model": {
+    "type": "minecraft:select",
+    "property": "minecraft:display_context",
+    "cases": [
+      {
+        "when": [
+          "gui",
+          "ground",
+          "fixed"
+        ],
+        "model": {
+          "type": "minecraft:model",
+          "model": "mms_combat:item/murasama_sheathed_inventory"
+        }
+      }
+    ],
+    "fallback": {
+      "type": "mms_render_common:geo",
+      "base": "mms_combat:item/murasama_sheathed_held",
+      "geo": "mms_combat:geo/item/murasama_sheathed.geo.json",
+      "texture": "mms_combat:textures/item/murasama_sheathed.png"
+    }
+  }
+}

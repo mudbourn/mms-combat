@@ -1,0 +1,120 @@
+{
+  "texture_size": [
+    128,
+    128
+  ],
+  "textures": {
+    "particle": "mms_combat:item/gun_sheath_item"
+  },
+  "display": {
+    "thirdperson_righthand": {
+      "translation": [
+        0,
+        -34.75,
+        0.75
+      ],
+      "scale": [
+        0.4,
+        0.4,
+        0.4
+      ]
+    },
+    "thirdperson_lefthand": {
+      "translation": [
+        0,
+        -34.75,
+        0.75
+      ],
+      "scale": [
+        0.4,
+        0.4,
+        0.4
+      ]
+    },
+    "firstperson_righthand": {
+      "rotation": [
+        -50,
+        0,
+        0
+      ],
+      "translation": [
+        0,
+        -20,
+        24
+      ],
+      "scale": [
+        0.4,
+        0.4,
+        0.4
+      ]
+    },
+    "firstperson_lefthand": {
+      "rotation": [
+        -50,
+        0,
+        0
+      ],
+      "translation": [
+        0,
+        -20,
+        24
+      ],
+      "scale": [
+        0.4,
+        0.4,
+        0.4
+      ]
+    },
+    "ground": {
+      "rotation": [
+        -5,
+        0,
+        0
+      ],
+      "translation": [
+        0,
+        0,
+        0.75
+      ],
+      "scale": [
+        0.1,
+        0.1,
+        0.1
+      ]
+    },
+    "gui": {
+      "rotation": [
+        90,
+        45,
+        90
+      ],
+      "translation": [
+        6.25,
+        7,
+        0
+      ],
+      "scale": [
+        0.2,
+        0.2,
+        0.2
+      ]
+    },
+    "fixed": {
+      "rotation": [
+        90,
+        -45,
+        -90
+      ],
+      "translation": [
+        -7.75,
+        9,
+        0
+      ],
+      "scale": [
+        0.25,
+        0.25,
+        0.25
+      ]
+    }
+  }
+}

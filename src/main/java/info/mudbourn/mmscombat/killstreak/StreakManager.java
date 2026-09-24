@@ -3,6 +3,7 @@ package info.mudbourn.mmscombat.killstreak;
 import info.mudbourn.mmscombat.combatlog.CombatManager;
 import info.mudbourn.mmscombat.config.CombatConfig;
 import info.mudbourn.mmscombat.config.CombatConfig.StreakTier;
+import info.mudbourn.mmscombat.killstreak.weapon.KillstreakWeapons;
 import info.mudbourn.mmscombat.registry.MmsCombatRegistries;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -29,7 +30,10 @@ import net.minecraft.world.item.ItemStack;
 public final class StreakManager {
 
     private static final StreakManager INSTANCE = new StreakManager();
+    private static final int QUARTERS_PER_KILL = 4;
+    private static final int QUARTERS_PER_GUN_KILL = 1;
 
+    // Streaks in quarter kills, so a crate-gun kill can add a quarter of a kill.
     private final Map<UUID, Integer> streaks = new HashMap<>();
     private final Map<UUID, Long> lastKillTick = new HashMap<>();
     private final Set<UUID> flaggedAtDeath = new HashSet<>();
@@ -42,7 +46,7 @@ public final class StreakManager {
     }
 
     public int getStreak(ServerPlayer player) {
-        return streaks.getOrDefault(player.getUUID(), 0);
+        return streaks.getOrDefault(player.getUUID(), 0) / QUARTERS_PER_KILL;
     }
 
     // Seconds until this player's streak next decays, or 0 when they hold no streak or decay is disabled.
@@ -63,7 +67,7 @@ public final class StreakManager {
             lastKillTick.remove(player.getUUID());
             return;
         }
-        streaks.put(player.getUUID(), count);
+        streaks.put(player.getUUID(), count * QUARTERS_PER_KILL);
         lastKillTick.put(player.getUUID(), player.level().getGameTime());
         StreakTier tier = tierFor(count);
         if (tier != null) {
@@ -110,9 +114,12 @@ public final class StreakManager {
         streaks.remove(victim.getUUID());
         lastKillTick.remove(victim.getUUID());
         if (victimWasFlagged && killer instanceof ServerPlayer aggressor && aggressor != victim) {
-            int streak = streaks.merge(aggressor.getUUID(), 1, Integer::sum);
+            int before = getStreak(aggressor);
+            int value = KillstreakWeapons.isStreakGun(aggressor.getMainHandItem()) ? QUARTERS_PER_GUN_KILL : QUARTERS_PER_KILL;
+            streaks.merge(aggressor.getUUID(), value, Integer::sum);
             lastKillTick.put(aggressor.getUUID(), aggressor.level().getGameTime());
-            StreakTier tier = tierFor(streak);
+            int streak = getStreak(aggressor);
+            StreakTier tier = streak == before ? null : tierFor(streak);
             if (tier != null) {
                 awardTier(aggressor, streak, tier);
             }
@@ -135,8 +142,8 @@ public final class StreakManager {
                 continue;
             }
             ServerPlayer player = server.getPlayerList().getPlayer(entry.getKey());
-            int reduced = entry.getValue() - amount;
-            if (reduced <= 0) {
+            int reduced = entry.getValue() - amount * QUARTERS_PER_KILL;
+            if (reduced < QUARTERS_PER_KILL) {
                 it.remove();
                 lastKillTick.remove(entry.getKey());
                 if (player != null) {
@@ -146,7 +153,7 @@ public final class StreakManager {
                 entry.setValue(reduced);
                 lastKillTick.put(entry.getKey(), now);
                 if (player != null) {
-                    player.sendSystemMessage(Component.literal("Your kill streak decayed to " + reduced + "."));
+                    player.sendSystemMessage(Component.literal("Your kill streak decayed to " + reduced / QUARTERS_PER_KILL + "."));
                 }
             }
         }

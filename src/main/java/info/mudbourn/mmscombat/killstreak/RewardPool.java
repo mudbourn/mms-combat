@@ -11,7 +11,7 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
 
-// Rolls one weighted reward from a tier's table and resolves it to its stacks: a killstreak weapon by key, or a plain item by registry id.
+// Rolls one weighted reward from a tier's table and resolves it to perishable, owner-bound stacks.
 public final class RewardPool {
 
     private RewardPool() {
@@ -48,20 +48,40 @@ public final class RewardPool {
         return resolved.get(resolved.size() - 1);
     }
 
-    // Resolves one reward entry to its stacks: a killstreak weapon by key, or a plain item by registry id, empty when the backing item is not installed.
+    // Resolves one reward entry to its perishable stacks, empty when the backing item is not installed.
     private static List<ItemStack> resolve(RewardEntry chosen, ServerPlayer owner) {
+        List<ItemStack> stacks = new ArrayList<>();
         if (chosen.weapon != null) {
-            return KillstreakWeapons.build(chosen.weapon, owner);
+            stacks.addAll(KillstreakWeapons.build(chosen.weapon, owner));
+        } else if (chosen.gun != null) {
+            stacks.addAll(KillstreakWeapons.buildGun(chosen.gun, owner));
+        } else {
+            stacks.addAll(item(chosen.item, chosen.count));
+            if (stacks.isEmpty()) {
+                return List.of();
+            }
+            if (chosen.with != null) {
+                for (String companion : chosen.with) {
+                    stacks.addAll(item(companion, 1));
+                }
+            }
         }
-        Identifier id = Identifier.tryParse(chosen.item);
+        for (ItemStack stack : stacks) {
+            Perishable.bind(stack, owner);
+        }
+        return stacks;
+    }
+
+    private static List<ItemStack> item(String itemId, int count) {
+        Identifier id = itemId == null ? null : Identifier.tryParse(itemId);
         if (id == null) {
-            MmsCombat.LOG.warn("Reward id {} is malformed", chosen.item);
+            MmsCombat.LOG.warn("Reward id {} is malformed", itemId);
             return List.of();
         }
         return BuiltInRegistries.ITEM.getOptional(id)
-            .map(item -> List.of(new ItemStack(item, Math.max(1, chosen.count))))
+            .map(item -> List.of(new ItemStack(item, Math.max(1, count))))
             .orElseGet(() -> {
-                MmsCombat.LOG.warn("Reward item {} is not registered; skipping", chosen.item);
+                MmsCombat.LOG.warn("Reward item {} is not registered; skipping", itemId);
                 return List.of();
             });
     }

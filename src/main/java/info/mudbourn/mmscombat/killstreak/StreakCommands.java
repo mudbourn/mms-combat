@@ -8,12 +8,21 @@ import info.mudbourn.mmscombat.config.CombatConfig;
 import info.mudbourn.mmscombat.config.CombatConfig.RewardEntry;
 import info.mudbourn.mmscombat.config.CombatConfig.StreakTier;
 import info.mudbourn.mmscombat.killstreak.weapon.KillstreakWeapons;
+import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import com.mojang.brigadier.suggestion.Suggestions;
+import com.mojang.brigadier.suggestion.SuggestionsBuilder;
 import java.util.Comparator;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
+import net.minecraft.commands.SharedSuggestionProvider;
+import net.minecraft.commands.arguments.IdentifierArgument;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.item.ItemStack;
 
 // The op-gated /mmscombat streaks subtree for editing tiers, their reward items, and the decay window at runtime.
 public final class StreakCommands {
@@ -50,6 +59,21 @@ public final class StreakCommands {
                             .executes(ctx -> addWeapon(
                                 ctx,
                                 IntegerArgumentType.getInteger(ctx, "weight")))))))
+            .then(Commands.literal("guns")
+                .executes(StreakCommands::listGuns))
+            .then(Commands.literal("testgun")
+                .then(Commands.argument("gun", IdentifierArgument.id())
+                    .suggests(StreakCommands::suggestGuns)
+                    .executes(StreakCommands::testGun)))
+            .then(Commands.literal("addgun")
+                .then(Commands.argument("kills", IntegerArgumentType.integer(1))
+                    .then(Commands.argument("gun", IdentifierArgument.id())
+                        .suggests(StreakCommands::suggestGuns)
+                        .executes(ctx -> addGun(ctx, 1))
+                        .then(Commands.argument("weight", IntegerArgumentType.integer(1))
+                            .executes(ctx -> addGun(
+                                ctx,
+                                IntegerArgumentType.getInteger(ctx, "weight")))))))
             .then(Commands.literal("removeitem")
                 .then(Commands.argument("kills", IntegerArgumentType.integer(1))
                     .then(Commands.argument("index", IntegerArgumentType.integer(0))
@@ -71,7 +95,9 @@ public final class StreakCommands {
             }
             for (int i = 0; i < tier.rewardTable.size(); i++) {
                 RewardEntry entry = tier.rewardTable.get(i);
-                String name = entry.weapon != null ? "weapon:" + entry.weapon : entry.item;
+                String name = entry.weapon != null ? "weapon:" + entry.weapon
+                    : entry.gun != null ? "gun:" + entry.gun
+                    : entry.item;
                 line.append(" [").append(i).append("] ")
                     .append(name)
                     .append(" x").append(entry.count)
@@ -129,6 +155,62 @@ public final class StreakCommands {
         ctx.getSource().sendSuccess(
             () -> Component.literal("Added " + item + " x" + count + " w" + weight
                 + " to the " + kills + "-kill tier." + note), true);
+        return 1;
+    }
+
+    private static CompletableFuture<Suggestions> suggestGuns(
+        CommandContext<CommandSourceStack> ctx,
+        SuggestionsBuilder builder
+    ) {
+        return SharedSuggestionProvider.suggestResource(KillstreakWeapons.gunIds(), builder);
+    }
+
+    private static int listGuns(CommandContext<CommandSourceStack> ctx) {
+        List<Identifier> guns = KillstreakWeapons.gunIds();
+        if (guns.isEmpty()) {
+            ctx.getSource().sendFailure(Component.literal("Just Enough Guns is not installed."));
+            return 0;
+        }
+        String joined = String.join(", ", guns.stream().map(Identifier::toString).toList());
+        ctx.getSource().sendSuccess(() -> Component.literal("JEG guns (" + guns.size() + "): " + joined), false);
+        return guns.size();
+    }
+
+    // Gives the caller the exact perishable kit a tier would drop for this gun.
+    private static int testGun(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
+        ServerPlayer player = ctx.getSource().getPlayerOrException();
+        String gun = IdentifierArgument.getId(ctx, "gun").toString();
+        List<ItemStack> kit = KillstreakWeapons.buildGun(gun, player);
+        if (kit.isEmpty()) {
+            ctx.getSource().sendFailure(Component.literal("No JEG gun " + gun + "."));
+            return 0;
+        }
+        for (ItemStack stack : kit) {
+            Perishable.bind(stack, player);
+            if (!player.addItem(stack)) {
+                player.drop(stack, false);
+            }
+        }
+        ctx.getSource().sendSuccess(() -> Component.literal("Gave the perishable " + gun + " kit."), false);
+        return 1;
+    }
+
+    private static int addGun(CommandContext<CommandSourceStack> ctx, int weight) {
+        int kills = IntegerArgumentType.getInteger(ctx, "kills");
+        String gun = IdentifierArgument.getId(ctx, "gun").toString();
+        if (KillstreakWeapons.gunIds().stream().noneMatch(id -> id.toString().equals(gun))) {
+            ctx.getSource().sendFailure(Component.literal("No JEG gun " + gun + "."));
+            return 0;
+        }
+        StreakTier tier = findTier(kills);
+        if (tier == null) {
+            ctx.getSource().sendFailure(Component.literal("No tier at " + kills + " kills; add one first."));
+            return 0;
+        }
+        tier.rewardTable.add(RewardEntry.gun(gun, weight));
+        sortAndSave();
+        ctx.getSource().sendSuccess(
+            () -> Component.literal("Added gun:" + gun + " w" + weight + " to the " + kills + "-kill tier."), true);
         return 1;
     }
 

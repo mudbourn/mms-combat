@@ -70,7 +70,7 @@ public class KillstreakCrateEntity extends Entity implements MenuProvider {
     private static final EntityDataAccessor<Boolean> DESPAWNING =
         SynchedEntityData.defineId(KillstreakCrateEntity.class, EntityDataSerializers.BOOLEAN);
 
-    private final SimpleContainer contents = new SimpleContainer(SLOTS);
+    private final SimpleContainer contents = new CrateContents(SLOTS);
     // Smooths the server's per-tick follow across the client's frames so the crate glides instead of snapping between tracker updates.
     private final InterpolationHandler interpolation = new InterpolationHandler(this);
     private UUID owner;
@@ -262,6 +262,18 @@ public class KillstreakCrateEntity extends Entity implements MenuProvider {
 
     public Container contents() {
         return this.contents;
+    }
+
+    // Whether a container is a killstreak crate's reward inventory.
+    public static boolean isCrateContainer(Container container) {
+        return container instanceof CrateContents;
+    }
+
+    private static final class CrateContents extends SimpleContainer {
+
+        private CrateContents(int size) {
+            super(size);
+        }
     }
 
     // Routes the tracker's position updates through the interpolator on the client so movement is stepped over several frames.

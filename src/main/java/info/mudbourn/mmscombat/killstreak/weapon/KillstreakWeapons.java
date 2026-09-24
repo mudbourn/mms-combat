@@ -4,6 +4,7 @@ import info.mudbourn.mmscombat.MmsCombat;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.UUIDUtil;
 import net.minecraft.core.component.DataComponentType;
@@ -26,11 +27,12 @@ import net.minecraft.world.item.enchantment.Enchantment;
 public final class KillstreakWeapons {
 
     // ks-support tier ids stamped into custom_data.streak_item, kept so the existing contract-purge datapack still recognises these stacks.
-    private static final int STREAK_ITEM_GUN = 1;
+    static final int STREAK_ITEM_GUN = 1;
     private static final int STREAK_ITEM_MJOLNIR = 2;
     private static final int STREAK_ITEM_SCYTHE = 3;
     private static final int STREAK_ITEM_HAMMER = 4;
     private static final int STREAK_ITEM_TRIDENT = 5;
+    private static final String JEG_MOD = "jeg";
 
     private static final Map<String, Function<ServerPlayer, List<ItemStack>>> REGISTRY = Map.of(
         "mjolnir", KillstreakWeapons::buildMjolnir,
@@ -149,8 +151,27 @@ public final class KillstreakWeapons {
         return ammo.isEmpty() ? List.of(gun) : List.of(gun, ammo);
     }
 
+    // A JEG gun with a full magazine plus spare magazines of its own ammo, or empty when JEG or the gun is missing.
+    public static List<ItemStack> buildGun(String gunId, ServerPlayer owner) {
+        if (!FabricLoader.getInstance().isModLoaded(JEG_MOD)) {
+            return List.of();
+        }
+        return JegGuns.build(gunId, owner);
+    }
+
+    // Every JEG gun id, or empty when JEG is not installed.
+    public static List<Identifier> gunIds() {
+        return FabricLoader.getInstance().isModLoaded(JEG_MOD) ? JegGuns.ids() : List.of();
+    }
+
+    // Whether the stack is a killstreak crate gun, by its custom_data streak_item tag.
+    public static boolean isStreakGun(ItemStack stack) {
+        CustomData data = stack.get(DataComponents.CUSTOM_DATA);
+        return data != null && data.copyTag().getIntOr("streak_item", 0) == STREAK_ITEM_GUN;
+    }
+
     // A base stack of the given item stamped with the owner-binding custom_data, or empty when the item is not registered.
-    private static ItemStack stack(String itemId, int count, int streakItem, ServerPlayer owner) {
+    static ItemStack stack(String itemId, int count, int streakItem, ServerPlayer owner) {
         Identifier id = Identifier.tryParse(itemId);
         if (id == null) {
             MmsCombat.LOG.warn("Killstreak weapon item {} is malformed", itemId);
@@ -197,7 +218,7 @@ public final class KillstreakWeapons {
 
     // Sets an integer-valued component (a JEG gun component, say) by id, skipping it when the type is absent.
     @SuppressWarnings("unchecked")
-    private static void setIntComponent(ItemStack stack, String componentId, int value) {
+    static void setIntComponent(ItemStack stack, String componentId, int value) {
         Identifier id = Identifier.tryParse(componentId);
         if (id == null) {
             return;

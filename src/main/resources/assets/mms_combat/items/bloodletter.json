@@ -1,0 +1,207 @@
+{
+  "model": {
+    "type": "minecraft:select",
+    "property": "minecraft:display_context",
+    "cases": [
+      {
+        "when": [
+          "gui",
+          "ground",
+          "fixed"
+        ],
+        "model": {
+          "type": "minecraft:range_dispatch",
+          "property": "mms_combat:counter",
+          "component": "mms_combat:ability_tick",
+          "entries": [
+            {
+              "threshold": 1,
+              "model": {
+                "type": "minecraft:model",
+                "model": "mms_combat:item/bloodletter_active_inventory"
+              }
+            }
+          ],
+          "fallback": {
+            "type": "minecraft:model",
+            "model": "mms_combat:item/bloodletter_inactive_inventory"
+          }
+        }
+      }
+    ],
+    "fallback": {
+      "type": "minecraft:range_dispatch",
+      "property": "mms_combat:elapsed",
+      "period": 15,
+      "entries": [
+        {
+          "threshold": 1,
+          "model": {
+            "type": "mms_render_common:geo",
+            "base": "mms_combat:item/bloodletter_held",
+            "geo": "mms_combat:geo/item/bloodletter.geo.json",
+            "texture": "mms_combat:textures/item/bloodletter/bloodletter_0.png"
+          }
+        },
+        {
+          "threshold": 2,
+          "model": {
+            "type": "mms_render_common:geo",
+            "base": "mms_combat:item/bloodletter_held",
+            "geo": "mms_combat:geo/item/bloodletter.geo.json",
+            "texture": "mms_combat:textures/item/bloodletter/bloodletter_1.png"
+          }
+        },
+        {
+          "threshold": 3,
+          "model": {
+            "type": "mms_render_common:geo",
+            "base": "mms_combat:item/bloodletter_held",
+            "geo": "mms_combat:geo/item/bloodletter.geo.json",
+            "texture": "mms_combat:textures/item/bloodletter/bloodletter_2.png"
+          }
+        },
+        {
+          "threshold": 4,
+          "model": {
+            "type": "mms_render_common:geo",
+            "base": "mms_combat:item/bloodletter_held",
+            "geo": "mms_combat:geo/item/bloodletter.geo.json",
+            "texture": "mms_combat:textures/item/bloodletter/bloodletter_3.png"
+          }
+        },
+        {
+          "threshold": 5,
+          "model": {
+            "type": "mms_render_common:geo",
+            "base": "mms_combat:item/bloodletter_held",
+            "geo": "mms_combat:geo/item/bloodletter.geo.json",
+            "texture": "mms_combat:textures/item/bloodletter/bloodletter_4.png"
+          }
+        },
+        {
+          "threshold": 6,
+          "model": {
+            "type": "mms_render_common:geo",
+            "base": "mms_combat:item/bloodletter_held",
+            "geo": "mms_combat:geo/item/bloodletter.geo.json",
+            "texture": "mms_combat:textures/item/bloodletter/bloodletter_5.png"
+          }
+        },
+        {
+          "threshold": 7,
+          "model": {
+            "type": "mms_render_common:geo",
+            "base": "mms_combat:item/bloodletter_held",
+            "geo": "mms_combat:geo/item/bloodletter.geo.json",
+            "texture": "mms_combat:textures/item/bloodletter/bloodletter_6.png"
+          }
+        },
+        {
+          "threshold": 8,
+          "model": {
+            "type": "mms_render_common:geo",
+            "base": "mms_combat:item/bloodletter_held",
+            "geo": "mms_combat:geo/item/bloodletter.geo.json",
+            "texture": "mms_combat:textures/item/bloodletter/bloodletter_7.png"
+          }
+        },
+        {
+          "threshold": 9,
+          "model": {
+            "type": "mms_render_common:geo",
+            "base": "mms_combat:item/bloodletter_held",
+            "geo": "mms_combat:geo/item/bloodletter.geo.json",
+            "texture": "mms_combat:textures/item/bloodletter/bloodletter_8.png"
+          }
+        },
+        {
+          "threshold": 10,
+          "model": {
+            "type": "mms_render_common:geo",
+            "base": "mms_combat:item/bloodletter_held",
+            "geo": "mms_combat:geo/item/bloodletter.geo.json",
+            "texture": "mms_combat:textures/item/bloodletter/bloodletter_9.png"
+          }
+        },
+        {
+          "threshold": 11,
+          "model": {
+            "type": "mms_render_common:geo",
+            "base": "mms_combat:item/bloodletter_held",
+            "geo": "mms_combat:geo/item/bloodletter.geo.json",
+            "texture": "mms_combat:textures/item/bloodletter/bloodletter_10.png"
+          }
+        },
+        {
+          "threshold": 12,
+          "model": {
+            "type": "mms_render_common:geo",
+            "base": "mms_combat:item/bloodletter_held",
+            "geo": "mms_combat:geo/item/bloodletter.geo.json",
+            "texture": "mms_combat:textures/item/bloodletter/bloodletter_11.png"
+          }
+        },
+        {
+          "threshold": 13,
+          "model": {
+            "type": "mms_render_common:geo",
+            "base": "mms_combat:item/bloodletter_held",
+            "geo": "mms_combat:geo/item/bloodletter.geo.json",
+            "texture": "mms_combat:textures/item/bloodletter/bloodletter_12.png"
+          }
+        },
+        {
+          "threshold": 14,
+          "model": {
+            "type": "mms_render_common:geo",
+            "base": "mms_combat:item/bloodletter_held",
+            "geo": "mms_combat:geo/item/bloodletter.geo.json",
+            "texture": "mms_combat:textures/item/bloodletter/bloodletter_13.png"
+          }
+        },
+        {
+          "threshold": 15,
+          "model": {
+            "type": "mms_render_common:geo",
+            "base": "mms_combat:item/bloodletter_held",
+            "geo": "mms_combat:geo/item/bloodletter.geo.json",
+            "texture": "mms_combat:textures/item/bloodletter/bloodletter_14.png"
+          }
+        }
+      ],
+      "fallback": {
+        "type": "minecraft:range_dispatch",
+        "property": "mms_combat:counter",
+        "component": "mms_combat:stored_blood",
+        "entries": [
+          {
+            "threshold": 100,
+            "model": {
+              "type": "mms_render_common:geo",
+              "base": "mms_combat:item/bloodletter_held",
+              "geo": "mms_combat:geo/item/bloodletter.geo.json",
+              "texture": "mms_combat:textures/item/bloodletter/bloodletter_half.png"
+            }
+          },
+          {
+            "threshold": 200,
+            "model": {
+              "type": "mms_render_common:geo",
+              "base": "mms_combat:item/bloodletter_held",
+              "geo": "mms_combat:geo/item/bloodletter.geo.json",
+              "texture": "mms_combat:textures/item/bloodletter/bloodletter_full.png"
+            }
+          }
+        ],
+        "fallback": {
+          "type": "mms_render_common:geo",
+          "base": "mms_combat:item/bloodletter_held",
+          "geo": "mms_combat:geo/item/bloodletter.geo.json",
+          "texture": "mms_combat:textures/item/bloodletter/bloodletter_empty.png"
+        }
+      }
+    }
+  },
+  "hand_animation_on_swap": false
+}

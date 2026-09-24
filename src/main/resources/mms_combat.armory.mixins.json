@@ -1,0 +1,15 @@
+{
+  "required": true,
+  "package": "info.mudbourn.mmscombat.armory.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "ArmoryDamageMixin",
+    "CrucibleArmorMixin",
+    "NonexistenceLivingMixin",
+    "NonexistenceSoundMixin",
+    "NonexistenceTargetMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

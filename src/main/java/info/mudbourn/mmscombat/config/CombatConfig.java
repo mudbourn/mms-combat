@@ -13,6 +13,7 @@ import net.fabricmc.loader.api.FabricLoader;
 // The one JSON config for every subsystem, loaded once at startup and re-savable to backfill new defaults.
 public final class CombatConfig {
 
+    private static final int STREAK_TIERS_VERSION = 4;
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static CombatConfig instance = new CombatConfig();
 
@@ -28,9 +29,10 @@ public final class CombatConfig {
     public int rkpPenaltyTicks = 200;
     public int rkpTeleportBlocks = 15;
 
-    public int streakDecayTicks = 1200;
+    public int streakDecayTicks = 200;
     public int streakDecayAmount = 1;
 
+    public int streakTiersVersion;
     public List<StreakTier> streakTiers = defaultTiers();
 
     public static CombatConfig get() {
@@ -73,8 +75,9 @@ public final class CombatConfig {
         rkpTeleportBlocks = Math.max(1, rkpTeleportBlocks);
         streakDecayTicks = Math.max(0, streakDecayTicks);
         streakDecayAmount = Math.max(1, streakDecayAmount);
-        if (streakTiers == null || streakTiers.isEmpty()) {
+        if (streakTiers == null || streakTiers.isEmpty() || streakTiersVersion < STREAK_TIERS_VERSION) {
             streakTiers = defaultTiers();
+            streakTiersVersion = STREAK_TIERS_VERSION;
         }
         streakTiers.sort((a, b) -> Integer.compare(a.kills, b.kills));
     }
@@ -90,12 +93,24 @@ public final class CombatConfig {
 
     private static List<StreakTier> defaultTiers() {
         List<StreakTier> tiers = new ArrayList<>();
-        tiers.add(StreakTier.of(3, RewardEntry.of("minecraft:golden_apple", 2, 1)));
-        tiers.add(StreakTier.of(5, RewardEntry.of("minecraft:diamond", 3, 1)));
-        tiers.add(StreakTier.of(8, RewardEntry.weapon("assault_rifle", 1),
-            RewardEntry.of("minecraft:diamond_block", 1, 1)));
-        tiers.add(StreakTier.of(12, RewardEntry.weapon("mjolnir", 2),
-            RewardEntry.of("minecraft:netherite_ingot", 1, 1)));
+        tiers.add(StreakTier.of(8,
+            RewardEntry.gun("jeg:assault_rifle", 1),
+            RewardEntry.gun("jeg:burst_rifle", 1),
+            RewardEntry.gun("jeg:combat_rifle", 1),
+            RewardEntry.gun("jeg:light_machine_gun", 1),
+            RewardEntry.gun("jeg:minigun", 1),
+            RewardEntry.gun("jeg:pump_shotgun", 1),
+            RewardEntry.gun("jeg:repeating_shotgun", 1),
+            RewardEntry.gun("jeg:bolt_action_rifle", 1),
+            RewardEntry.gun("jeg:rocket_launcher", 1)));
+        tiers.add(StreakTier.of(12,
+            RewardEntry.of("mms_combat:dragon_slayer", 1, 1),
+            RewardEntry.of("mms_combat:bloodletter", 1, 1),
+            RewardEntry.of("mms_combat:crucible", 1, 1),
+            RewardEntry.of("mms_combat:edge_of_existence", 1, 1),
+            RewardEntry.of("mms_combat:murasama", 1, 1).with("mms_combat:gun_sheath"),
+            RewardEntry.of("mms_combat:punisher", 1, 1),
+            RewardEntry.of("mms_combat:originium_catalyst", 8, 1)));
         return tiers;
     }
 
@@ -112,9 +127,11 @@ public final class CombatConfig {
         }
     }
 
-    // One weighted reward: either a plain registry id (with count) or a killstreak weapon key, plus its relative draw weight.
+    // One weighted reward: a plain registry id (with count and companion items), a JEG gun id, or a killstreak weapon key, plus its relative draw weight.
     public static final class RewardEntry {
         public String item;
+        public List<String> with = new ArrayList<>();
+        public String gun;
         public String weapon;
         public int count = 1;
         public int weight = 1;
@@ -125,6 +142,19 @@ public final class CombatConfig {
             entry.count = count;
             entry.weight = weight;
             return entry;
+        }
+
+        public static RewardEntry gun(String gun, int weight) {
+            RewardEntry entry = new RewardEntry();
+            entry.gun = gun;
+            entry.weight = weight;
+            return entry;
+        }
+
+        // Adds a companion item granted alongside this reward.
+        public RewardEntry with(String companion) {
+            this.with.add(companion);
+            return this;
         }
 
         public static RewardEntry weapon(String weapon, int weight) {
