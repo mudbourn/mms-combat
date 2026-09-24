@@ -19,9 +19,9 @@ public class ArmoryWeaponItem extends Item {
         this.stats = stats;
     }
 
-    // Copies a stack onto another item, keeping its state but not its attribute bonuses.
+    // Copies one of a stack onto another item, keeping its state but not its attribute bonuses.
     public static ItemStack transmute(ItemStack stack, ItemLike item) {
-        ItemStack copy = stack.transmuteCopy(item);
+        ItemStack copy = stack.transmuteCopy(item, 1);
         copy.copyFrom(DataComponents.ATTRIBUTE_MODIFIERS, copy.getPrototype());
         return copy;
     }

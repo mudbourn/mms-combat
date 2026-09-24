@@ -17,7 +17,7 @@ public class DragonSlayerItem extends ArmoryWeaponItem {
     private static final float DAMAGE_CAP = 10240.0F;
 
     public DragonSlayerItem(Properties properties) {
-        super(new WeaponStats(18.0, -3.6, 1.5, 3.0), properties);
+        super(new WeaponStats(18.0, -3.6, 2.5, 3.0), properties);
     }
 
     // Adds damage dealt with this stack to its running total.

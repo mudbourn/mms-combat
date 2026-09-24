@@ -70,7 +70,9 @@ public class CrucibleItem extends ArmoryWeaponItem {
 
     @Override
     public void hurtEnemy(ItemStack stack, LivingEntity target, LivingEntity attacker) {
-        if (spend(stack, attacker.level().getGameTime()) > 0) {
+        long now = attacker.level().getGameTime();
+        // One energy per swing: later sweep hits in the same tick are free.
+        if (Long.valueOf(now).equals(stack.get(ArmoryComponents.CHARGE_START)) || spend(stack, now) > 0) {
             return;
         }
         attacker.playSound(ArmorySounds.CRUCIBLE_DEACTIVATE, 1.0F, 1.0F);

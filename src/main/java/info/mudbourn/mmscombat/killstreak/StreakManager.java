@@ -12,6 +12,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
+import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.minecraft.core.Holder;
@@ -36,6 +37,8 @@ public final class StreakManager {
     // Streaks in quarter kills, so a crate-gun kill can add a quarter of a kill.
     private final Map<UUID, Integer> streaks = new HashMap<>();
     private final Map<UUID, Long> lastKillTick = new HashMap<>();
+    // Tier kill counts each player has been paid a crate for this life, cleared on respawn.
+    private final Map<UUID, Set<Integer>> paidTiers = new HashMap<>();
     private final Set<UUID> flaggedAtDeath = new HashSet<>();
 
     private StreakManager() {
@@ -65,6 +68,7 @@ public final class StreakManager {
         if (count <= 0) {
             streaks.remove(player.getUUID());
             lastKillTick.remove(player.getUUID());
+            paidTiers.remove(player.getUUID());
             return;
         }
         streaks.put(player.getUUID(), count * QUARTERS_PER_KILL);
@@ -105,6 +109,12 @@ public final class StreakManager {
             INSTANCE.streaks.remove(handler.player.getUUID());
             INSTANCE.lastKillTick.remove(handler.player.getUUID());
             INSTANCE.flaggedAtDeath.remove(handler.player.getUUID());
+            INSTANCE.paidTiers.remove(handler.player.getUUID());
+        });
+        ServerPlayerEvents.AFTER_RESPAWN.register((oldPlayer, newPlayer, alive) -> {
+            if (!alive) {
+                INSTANCE.paidTiers.remove(newPlayer.getUUID());
+            }
         });
         ServerTickEvents.END_SERVER_TICK.register(INSTANCE::tick);
     }
@@ -120,7 +130,7 @@ public final class StreakManager {
             lastKillTick.put(aggressor.getUUID(), aggressor.level().getGameTime());
             int streak = getStreak(aggressor);
             StreakTier tier = streak == before ? null : tierFor(streak);
-            if (tier != null) {
+            if (tier != null && paidTiers.computeIfAbsent(aggressor.getUUID(), id -> new HashSet<>()).add(tier.kills)) {
                 awardTier(aggressor, streak, tier);
             }
         }
