@@ -53,7 +53,7 @@ public final class MmsCombatCommands {
             .then(Commands.literal("reward")
                 .then(Commands.argument("tierKills", IntegerArgumentType.integer(1))
                     .executes(ctx -> reward(ctx, self(ctx))))));
-        // Open to every player: hold yourself in combat so others can fight you, until you turn it back off.
+        // Open to every player: opt in or out of PvP; it is off by default.
         dispatcher.register(Commands.literal("combatlog")
             .executes(MmsCombatCommands::combatLogToggle)
             .then(Commands.literal("on").executes(ctx -> combatLog(ctx, true)))
@@ -68,8 +68,8 @@ public final class MmsCombatCommands {
         ServerPlayer player = self(ctx);
         CombatManager.get().setPersistentCombat(player, on);
         ctx.getSource().sendSuccess(() -> Component.literal(on
-            ? "PvP is on: your nametag is red and other players can fight you until you turn it off."
-            : "PvP hold is off."), false);
+            ? "PvP is on: you can fight and be fought by other players with PvP on."
+            : "PvP is off: other players cannot hurt you and you cannot hurt them."), false);
         return 1;
     }
 

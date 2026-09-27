@@ -16,6 +16,7 @@ import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.ChatFormatting;
+import net.minecraft.network.chat.Component;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.protocol.game.ClientboundSoundPacket;
 import net.minecraft.server.MinecraftServer;
@@ -36,7 +37,7 @@ public final class CombatManager {
     private final Map<UUID, HudSnapshot> lastSent = new HashMap<>();
     private final Set<UUID> persistentCombat = new HashSet<>();
     private final LogoutBodyManager bodies = new LogoutBodyManager();
-    private final RandomKillProtection rkp = new RandomKillProtection();
+    private final Set<UUID> inZoneLastTick = new HashSet<>();
 
     // Scoreboard team whose only job is to paint a flagged player's nametag red.
     private static final String COMBAT_TEAM = "mms_combat";
@@ -55,7 +56,7 @@ public final class CombatManager {
             if (entity instanceof ServerPlayer victim
                 && source.getEntity() instanceof ServerPlayer attacker
                 && attacker != victim) {
-                return INSTANCE.rkp.allowHit(victim, attacker, INSTANCE);
+                return INSTANCE.allowPvp(victim, attacker);
             }
             return true;
         });
@@ -66,7 +67,6 @@ public final class CombatManager {
         });
         ServerLivingEntityEvents.AFTER_DEATH.register((entity, source) -> {
             if (entity instanceof ServerPlayer player) {
-                INSTANCE.rkp.remove(player.getUUID());
                 INSTANCE.clear(player);
             }
         });
@@ -79,9 +79,29 @@ public final class CombatManager {
         ServerTickEvents.END_SERVER_TICK.register(INSTANCE::tick);
     }
 
+    // Whether a player-on-player hit may land: both sides must have PvP on, and a landed hit flags both.
+    private boolean allowPvp(ServerPlayer victim, ServerPlayer attacker) {
+        if (!isPvpEnabled(attacker)) {
+            attacker.displayClientMessage(Component.literal("Your PvP is off. Use /combatlog on to fight."), true);
+            return false;
+        }
+        if (!isPvpEnabled(victim)) {
+            attacker.displayClientMessage(Component.literal("That player has PvP off."), true);
+            return false;
+        }
+        flag(victim);
+        flag(attacker);
+        return true;
+    }
+
+    // Whether a player has opted into PvP with the toggle or is standing in a combat zone.
+    public boolean isPvpEnabled(ServerPlayer player) {
+        return persistentCombat.contains(player.getUUID()) || inFlaggingZone(player);
+    }
+
     private void onDamaged(ServerPlayer victim, net.minecraft.world.entity.Entity attacker) {
         if (attacker instanceof ServerPlayer aggressor && aggressor != victim) {
-            // Player-vs-player flagging is decided in allowHit before the hit lands, so a courting hit never drags the victim into combat.
+            // Player-vs-player flagging happens in allowPvp before the hit lands.
             return;
         }
         if (attacker instanceof Player && attacker != victim) {
@@ -165,7 +185,7 @@ public final class CombatManager {
 
     private void onDisconnect(ServerPlayer player) {
         boolean flagged = isFlagged(player);
-        rkp.remove(player.getUUID());
+        inZoneLastTick.remove(player.getUUID());
         Long deadline = deadlines.remove(player.getUUID());
         forgetSentState(player.getUUID());
         if (!flagged) {
@@ -185,12 +205,19 @@ public final class CombatManager {
 
     private void tick(MinecraftServer server) {
         bodies.tick(server);
-        rkp.tick(server.overworld());
         if (!deadlines.isEmpty()) {
             deadlines.keySet().removeIf(id -> server.getPlayerList().getPlayer(id) == null);
         }
+        if (!inZoneLastTick.isEmpty()) {
+            inZoneLastTick.removeIf(id -> server.getPlayerList().getPlayer(id) == null);
+        }
         for (ServerPlayer player : server.getPlayerList().getPlayers()) {
             boolean inZone = inFlaggingZone(player);
+            if (inZone && inZoneLastTick.add(player.getUUID())) {
+                enterZone(player);
+            } else if (!inZone) {
+                inZoneLastTick.remove(player.getUUID());
+            }
             if (inZone) {
                 holdInZone(player);
             } else {
@@ -198,6 +225,15 @@ public final class CombatManager {
             }
             refreshHud(player, inZone);
         }
+    }
+
+    // Entering a combat zone turns the PvP toggle on, and it stays on after leaving until turned off.
+    private void enterZone(ServerPlayer player) {
+        if (persistentCombat.contains(player.getUUID())) {
+            return;
+        }
+        setPersistentCombat(player, true);
+        player.displayClientMessage(Component.literal("You entered a combat zone. PvP is on until you use /combatlog off."), false);
     }
 
     // Standing in a flagCombatOnEnter zone flags or refreshes combat, even for a player not already fighting.
