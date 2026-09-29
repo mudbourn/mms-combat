@@ -69,7 +69,7 @@ public final class MmsCombatCommands {
         CombatManager.get().setPersistentCombat(player, on);
         ctx.getSource().sendSuccess(() -> Component.literal(on
             ? "PvP is on: you can fight and be fought by other players with PvP on."
-            : "PvP is off: other players cannot hurt you and you cannot hurt them."), false);
+            : "PvP has been disabled."), false);
         return 1;
     }
 

@@ -215,8 +215,8 @@ public final class CombatManager {
             boolean inZone = inFlaggingZone(player);
             if (inZone && inZoneLastTick.add(player.getUUID())) {
                 enterZone(player);
-            } else if (!inZone) {
-                inZoneLastTick.remove(player.getUUID());
+            } else if (!inZone && inZoneLastTick.remove(player.getUUID())) {
+                exitZone(player);
             }
             if (inZone) {
                 holdInZone(player);
@@ -227,13 +227,22 @@ public final class CombatManager {
         }
     }
 
-    // Entering a combat zone turns the PvP toggle on, and it stays on after leaving until turned off.
+    // Entering a combat zone turns the PvP toggle on for as long as the player stays inside.
     private void enterZone(ServerPlayer player) {
         if (persistentCombat.contains(player.getUUID())) {
             return;
         }
         setPersistentCombat(player, true);
-        player.displayClientMessage(Component.literal("You entered a combat zone. PvP is on until you use /combatlog off."), false);
+        player.displayClientMessage(Component.literal("You entered a combat zone. PvP is on."), false);
+    }
+
+    // Leaving a combat zone turns the PvP toggle off and leaves the combat timer counting down from the exit.
+    private void exitZone(ServerPlayer player) {
+        if (!persistentCombat.contains(player.getUUID())) {
+            return;
+        }
+        setPersistentCombat(player, false);
+        player.displayClientMessage(Component.literal("PvP has been disabled."), false);
     }
 
     // Standing in a flagCombatOnEnter zone flags or refreshes combat, even for a player not already fighting.
