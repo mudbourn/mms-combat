@@ -3,3 +3,8 @@ accessWidener v2 named
 accessible method net/minecraft/world/entity/decoration/Mannequin setProfile (Lnet/minecraft/world/item/component/ResolvableProfile;)V
 accessible method net/minecraft/world/entity/decoration/Mannequin setImmovable (Z)V
 accessible method net/minecraft/world/entity/decoration/Mannequin setHideDescription (Z)V
+accessible method net/minecraft/world/entity/decoration/ArmorStand setMarker (Z)V
+accessible method net/minecraft/world/entity/LivingEntity getDamageAfterArmorAbsorb (Lnet/minecraft/world/damagesource/DamageSource;F)F
+accessible method net/minecraft/world/entity/LivingEntity getDamageAfterMagicAbsorb (Lnet/minecraft/world/damagesource/DamageSource;F)F
+accessible method net/minecraft/world/entity/Display setBillboardConstraints (Lnet/minecraft/world/entity/Display$BillboardConstraints;)V
+accessible method net/minecraft/world/entity/Display$TextDisplay setText (Lnet/minecraft/network/chat/Component;)V

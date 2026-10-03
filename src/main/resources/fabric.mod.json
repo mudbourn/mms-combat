@@ -17,6 +17,7 @@
     "mms_combat.zone.mixins.json",
     "mms_combat.armory.mixins.json",
     "mms_combat.jeg.mixins.json",
+    "mms_combat.dummy.mixins.json",
     {
       "config": "mms_combat.armory.client.mixins.json",
       "environment": "client"

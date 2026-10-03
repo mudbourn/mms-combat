@@ -36,6 +36,7 @@
   "subtitles.mms_combat.edge_of_existence_deactivate": "Something that should never have appears",
   "subtitles.mms_combat.murasama_sheath": "Murasama is sheathed",
   "itemGroup.mms_combat.armory": "Armory",
+  "item.mms_combat.training_dummy": "Training Dummy",
   "death.attack.mms_combat.crucible": "%1$s was cleaved by %2$s",
   "death.attack.mms_combat.crucible.item": "%1$s was cleaved by %2$s using %3$s"
 }

@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "key": {
+    "#": "minecraft:stick",
+    "X": "minecraft:target",
+    "H": "minecraft:hay_block"
+  },
+  "pattern": [
+    " H ",
+    "#X#",
+    " # "
+  ],
+  "result": {
+    "id": "mms_combat:training_dummy",
+    "count": 1
+  }
+}
