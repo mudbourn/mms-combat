@@ -23,6 +23,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Display;
+import net.minecraft.world.entity.EntityDimensions;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.decoration.ArmorStand;
@@ -34,18 +35,34 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.TypedEntityData;
 import net.minecraft.world.phys.Vec3;
 
-// A silent invisible armor stand wearing the dummy model that absorbs every hit and floats the damage it would have dealt; sneak-attacking it picks it back up.
+// A silent invisible armor stand wearing the dummy model that absorbs every hit, floats each hit and keeps a last/total readout; sneak-attacking it picks it back up.
 public final class TrainingDummy {
 
     public static final String TAG = "mms_combat_training_dummy";
     private static final String NUMBER_TAG = "mms_combat_dummy_number";
     private static final String LEGACY_TAG = "training_dummy";
+    private static final String TALLY_TAG = "mms_combat_dummy_tally";
     private static final int ALL_SLOTS_DISABLED = 4144959;
     private static final int NUMBER_TICKS = 20;
+    private static final int TALLY_RESET_TICKS = 100;
+    private static final double TALLY_HEIGHT = 2.4;
+
+    public static final EntityDimensions DIMENSIONS = EntityDimensions.fixed(1.0F, 2.0F).withEyeHeight(1.7775F);
 
     public static final Item ITEM = registerItem();
 
     private static final Map<Display.TextDisplay, Integer> numbers = new HashMap<>();
+    private static final Map<ArmorStand, Tally> tallies = new HashMap<>();
+
+    private static final class Tally {
+        private final Display.TextDisplay display;
+        private float total;
+        private int idle;
+
+        private Tally(Display.TextDisplay display) {
+            this.display = display;
+        }
+    }
 
     private TrainingDummy() {
     }
@@ -53,9 +70,7 @@ public final class TrainingDummy {
     public static void register() {
         ItemGroupEvents.modifyEntriesEvent(CreativeModeTabs.COMBAT).register(entries -> entries.accept(ITEM));
         ServerEntityEvents.ENTITY_LOAD.register((entity, level) -> {
-            if (entity instanceof Display.TextDisplay display
-                && display.getTags().contains(NUMBER_TAG)
-                && !numbers.containsKey(display)) {
+            if (entity instanceof Display.TextDisplay display && isStaleReadout(display)) {
                 display.discard();
             } else if (entity instanceof Slime slime && slime.getTags().contains(LEGACY_TAG)) {
                 slime.discard();
@@ -64,6 +79,11 @@ public final class TrainingDummy {
             }
         });
         ServerTickEvents.END_SERVER_TICK.register(TrainingDummy::tick);
+    }
+
+    // Whether an armor stand is a placed dummy, read from state the client also sees.
+    public static boolean isDummy(ArmorStand stand) {
+        return stand.isInvisible() && stand.getItemBySlot(EquipmentSlot.HEAD).is(ITEM);
     }
 
     // Absorbs one hit: a sneaking player's own swing picks the dummy up, anything else floats the damage dealt after the dummy's armor.
@@ -77,6 +97,7 @@ public final class TrainingDummy {
         float dealt = dummy.getDamageAfterMagicAbsorb(source, dummy.getDamageAfterArmorAbsorb(source, amount));
         if (dealt > 0) {
             showNumber(level, dummy, source, dealt);
+            tally(level, dummy, dealt);
         }
     }
 
@@ -115,6 +136,33 @@ public final class TrainingDummy {
         level.addFreshEntity(display);
     }
 
+    private static void tally(ServerLevel level, ArmorStand dummy, float dealt) {
+        Tally tally = tallies.get(dummy);
+        if (tally == null || tally.display.isRemoved()) {
+            Display.TextDisplay display = new Display.TextDisplay(EntityType.TEXT_DISPLAY, level);
+            display.setPos(dummy.position().add(0, TALLY_HEIGHT, 0));
+            display.setBillboardConstraints(Display.BillboardConstraints.CENTER);
+            display.addTag(TALLY_TAG);
+            level.addFreshEntity(display);
+            tally = new Tally(display);
+            tallies.put(dummy, tally);
+        }
+        tally.total += dealt;
+        tally.idle = TALLY_RESET_TICKS;
+        tally.display.setText(Component.empty()
+            .append(Component.literal(String.format("Last %.1f", dealt)).withStyle(ChatFormatting.RED))
+            .append("\n")
+            .append(Component.literal(String.format("Total %.1f", tally.total)).withStyle(ChatFormatting.GOLD)));
+    }
+
+    private static boolean isStaleReadout(Display.TextDisplay display) {
+        if (display.getTags().contains(NUMBER_TAG)) {
+            return !numbers.containsKey(display);
+        }
+        return display.getTags().contains(TALLY_TAG)
+            && tallies.values().stream().noneMatch(tally -> tally.display == display);
+    }
+
     private static void tick(MinecraftServer server) {
         Iterator<Map.Entry<Display.TextDisplay, Integer>> it = numbers.entrySet().iterator();
         while (it.hasNext()) {
@@ -125,6 +173,17 @@ public final class TrainingDummy {
                 it.remove();
             } else {
                 entry.setValue(left);
+            }
+        }
+
+        Iterator<Map.Entry<ArmorStand, Tally>> tallyIt = tallies.entrySet().iterator();
+        while (tallyIt.hasNext()) {
+            Map.Entry<ArmorStand, Tally> entry = tallyIt.next();
+            Tally tally = entry.getValue();
+            tally.idle--;
+            if (tally.idle <= 0 || entry.getKey().isRemoved() || tally.display.isRemoved()) {
+                tally.display.discard();
+                tallyIt.remove();
             }
         }
     }
