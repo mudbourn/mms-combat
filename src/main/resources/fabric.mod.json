@@ -15,8 +15,7 @@
   },
   "mixins": [
     "mms_combat.zone.mixins.json",
-    "mms_combat.jeg.mixins.json",
-    "mms_combat.dummy.mixins.json"
+    "mms_combat.jeg.mixins.json"
   ],
   "accessWidener": "mms_combat.accesswidener",
   "depends": {
@@ -24,10 +23,10 @@
     "minecraft": "~1.21.11",
     "java": ">=21",
     "fabric-api": "*",
-    "mms_render_common": "*"
+    "mms_render_common": "*",
+    "mms_arsenal": "*"
   },
   "suggests": {
-    "justenoughguns": "*",
-    "mms_arsenal": "*"
+    "justenoughguns": "*"
   }
 }

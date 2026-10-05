@@ -2,7 +2,6 @@ package info.mudbourn.mmscombat;
 
 import info.mudbourn.mmscombat.combatlog.CombatManager;
 import info.mudbourn.mmscombat.config.CombatConfig;
-import info.mudbourn.mmscombat.dummy.TrainingDummy;
 import info.mudbourn.mmscombat.killstreak.Perishable;
 import info.mudbourn.mmscombat.killstreak.StreakManager;
 import info.mudbourn.mmscombat.command.MmsCombatCommands;
@@ -29,7 +28,6 @@ public class MmsCombat implements ModInitializer {
         CombatManager.register();
         StreakManager.register();
         Perishable.register();
-        TrainingDummy.register();
 
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) ->
             MmsCombatCommands.register(dispatcher));

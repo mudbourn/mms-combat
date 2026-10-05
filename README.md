@@ -21,6 +21,3 @@ pitfalls this deliberately avoids. This mod supersedes the killstreak half of
 
 Build: `./gradlew build`. Release via the shared engine (see
 `mms-pack/.github/workflows/mod-release.yml`).
-
-The training dummy model and texture are by Silentcat under CC BY-SA 4.0; see
-[docs/ATTRIBUTION.md](docs/ATTRIBUTION.md).
