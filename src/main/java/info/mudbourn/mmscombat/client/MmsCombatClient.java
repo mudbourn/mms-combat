@@ -1,9 +1,5 @@
 package info.mudbourn.mmscombat.client;
 
-import info.mudbourn.mmscombat.armory.ArmoryClock;
-import info.mudbourn.mmscombat.client.armory.ComponentCounterProperty;
-import info.mudbourn.mmscombat.client.armory.ElapsedTicksProperty;
-import info.mudbourn.mmscombat.client.armory.NonexistenceClientState;
 import info.mudbourn.mmscombat.client.hud.CombatHudRenderer;
 import info.mudbourn.mmscombat.client.hud.CombatHudState;
 import info.mudbourn.mmscombat.client.render.KillstreakCrateRenderer;
@@ -14,8 +10,6 @@ import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.multiplayer.ClientLevel;
 
 // Receives combat state from the server and draws the in-combat indicator over the hotbar.
 public class MmsCombatClient implements ClientModInitializer {
@@ -34,13 +28,6 @@ public class MmsCombatClient implements ClientModInitializer {
             CombatHudRenderer.ID,
             new CombatHudRenderer());
 
-        ComponentCounterProperty.register();
-        ElapsedTicksProperty.register();
-        NonexistenceClientState.register();
-        ArmoryClock.setDisplay(() -> {
-            ClientLevel level = Minecraft.getInstance().level;
-            return level == null ? ArmoryClock.UNKNOWN : level.getGameTime();
-        });
         EntityRendererRegistry.register(MmsCombatRegistries.KILLSTREAK_CRATE, KillstreakCrateRenderer::new);
     }
 }

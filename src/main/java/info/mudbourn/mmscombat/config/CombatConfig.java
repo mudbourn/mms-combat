@@ -94,13 +94,13 @@ public final class CombatConfig {
             RewardEntry.gun("jeg:bolt_action_rifle", 1),
             RewardEntry.gun("jeg:rocket_launcher", 1)));
         tiers.add(StreakTier.of(12,
-            RewardEntry.of("mms_combat:dragon_slayer", 1, 1),
-            RewardEntry.of("mms_combat:bloodletter", 1, 1),
-            RewardEntry.of("mms_combat:crucible", 1, 1),
-            RewardEntry.of("mms_combat:edge_of_existence", 1, 1),
-            RewardEntry.of("mms_combat:murasama", 1, 1).with("mms_combat:gun_sheath"),
-            RewardEntry.of("mms_combat:punisher", 1, 1),
-            RewardEntry.of("mms_combat:originium_catalyst", 8, 1)));
+            RewardEntry.of("mms_arsenal:dragon_slayer", 1, 1),
+            RewardEntry.of("mms_arsenal:bloodletter", 1, 1),
+            RewardEntry.of("mms_arsenal:crucible", 1, 1),
+            RewardEntry.of("mms_arsenal:edge_of_existence", 1, 1),
+            RewardEntry.of("mms_arsenal:murasama", 1, 1).with("mms_arsenal:gun_sheath"),
+            RewardEntry.of("mms_arsenal:punisher", 1, 1),
+            RewardEntry.of("mms_arsenal:originium_catalyst", 8, 1)));
         return tiers;
     }
 

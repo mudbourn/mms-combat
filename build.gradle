@@ -46,8 +46,6 @@ dependencies {
     modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
     modImplementation "net.fabricmc.fabric-api:fabric-api:0.141.4+1.21.11"
     modImplementation "info.mudbourn:mms-render-common:${project.render_common_version}"
-    runtimeMods "maven.modrinth:better-combat:${project.better_combat_version}"
-    runtimeMods "maven.modrinth:player-animation-library:${project.player_animation_library_version}"
     // Just Enough Guns is the source of the ranged killstreak rewards; local jar (no Maven),
     // compiled against and copied into the dev run mods folders but not declared as a dependency of the mod.
     modCompileOnly files("libs/justenoughguns-fabric-1.4.0.jar")
