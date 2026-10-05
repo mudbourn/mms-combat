@@ -151,8 +151,11 @@ public final class KillstreakWeapons {
         return ammo.isEmpty() ? List.of(gun) : List.of(gun, ammo);
     }
 
-    // A JEG gun with a full magazine plus spare magazines of its own ammo, or empty when JEG or the gun is missing.
+    // A gun with a full magazine plus spare ammo, from mms-arsenal or JEG by namespace, or empty when its mod or the gun is missing.
     public static List<ItemStack> buildGun(String gunId, ServerPlayer owner) {
+        if (gunId.startsWith(ArsenalGuns.NAMESPACE + ":")) {
+            return ArsenalGuns.build(gunId, owner);
+        }
         if (!FabricLoader.getInstance().isModLoaded(JEG_MOD)) {
             return List.of();
         }

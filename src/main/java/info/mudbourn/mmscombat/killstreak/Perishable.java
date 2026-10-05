@@ -18,19 +18,23 @@ import net.minecraft.core.UUIDUtil;
 import net.minecraft.core.component.DataComponentType;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.Style;
 import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.Container;
 import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.entity.decoration.ItemFrame;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.Slot;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.BundleContents;
 import net.minecraft.world.item.component.ItemLore;
@@ -47,6 +51,7 @@ public final class Perishable {
             .build()
     );
 
+    private static final ResourceKey<Item> TRAINING_DUMMY = ResourceKey.create(Registries.ITEM, Identifier.fromNamespaceAndPath("mms_arsenal", "training_dummy"));
     private static final String REVIVE_MOD = "absolutrevive";
     private static Method reviveModelLookup;
     private static boolean reviveLookupFailed;
@@ -69,10 +74,15 @@ public final class Perishable {
             }
         });
         UseEntityCallback.EVENT.register((player, level, hand, entity, hit) ->
-            isPerishable(player.getItemInHand(hand)) && (entity instanceof ItemFrame || entity instanceof ArmorStand)
+            isPerishable(player.getItemInHand(hand)) && (entity instanceof ItemFrame || entity instanceof ArmorStand stand && !isTrainingDummy(stand))
                 ? InteractionResult.FAIL
                 : InteractionResult.PASS);
         ServerTickEvents.END_SERVER_TICK.register(Perishable::tick);
+    }
+
+    // A placed mms-arsenal training dummy, read from state the client also sees; it never takes items, so perishables may be used on it.
+    private static boolean isTrainingDummy(ArmorStand stand) {
+        return stand.isInvisible() && stand.getItemBySlot(EquipmentSlot.HEAD).getItemHolder().is(TRAINING_DUMMY);
     }
 
     // Binds a stack to its owner and tags it so the holder can see it will not last.

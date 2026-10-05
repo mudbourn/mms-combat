@@ -13,7 +13,7 @@ import net.fabricmc.loader.api.FabricLoader;
 // The one JSON config for every subsystem, loaded once at startup and re-savable to backfill new defaults.
 public final class CombatConfig {
 
-    private static final int STREAK_TIERS_VERSION = 4;
+    private static final int STREAK_TIERS_VERSION = 5;
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static CombatConfig instance = new CombatConfig();
 
@@ -84,15 +84,17 @@ public final class CombatConfig {
     private static List<StreakTier> defaultTiers() {
         List<StreakTier> tiers = new ArrayList<>();
         tiers.add(StreakTier.of(8,
-            RewardEntry.gun("jeg:assault_rifle", 1),
-            RewardEntry.gun("jeg:burst_rifle", 1),
-            RewardEntry.gun("jeg:combat_rifle", 1),
-            RewardEntry.gun("jeg:light_machine_gun", 1),
-            RewardEntry.gun("jeg:minigun", 1),
-            RewardEntry.gun("jeg:pump_shotgun", 1),
-            RewardEntry.gun("jeg:repeating_shotgun", 1),
-            RewardEntry.gun("jeg:bolt_action_rifle", 1),
-            RewardEntry.gun("jeg:rocket_launcher", 1)));
+            RewardEntry.gun("mms_arsenal:revolver", 1),
+            RewardEntry.gun("mms_arsenal:assault_rifle", 1),
+            RewardEntry.gun("mms_arsenal:bolt_action_rifle", 1),
+            RewardEntry.gun("mms_arsenal:light_machine_gun", 1),
+            RewardEntry.gun("mms_arsenal:minigun", 1),
+            RewardEntry.gun("mms_arsenal:rocket_launcher", 1))
+            .utilities(2,
+                RewardEntry.of("mms_arsenal:grenade", 1, 1),
+                RewardEntry.of("mms_arsenal:stun_grenade", 1, 1),
+                RewardEntry.of("mms_arsenal:smoke_grenade", 1, 1),
+                RewardEntry.of("mms_arsenal:molotov_cocktail", 1, 1)));
         tiers.add(StreakTier.of(12,
             RewardEntry.of("mms_arsenal:dragon_slayer", 1, 1),
             RewardEntry.of("mms_arsenal:bloodletter", 1, 1),
@@ -108,12 +110,22 @@ public final class CombatConfig {
     public static final class StreakTier {
         public int kills;
         public List<RewardEntry> rewardTable = new ArrayList<>();
+        // How many extra draws the crate takes from the utility table, each independent of the main reward.
+        public int utilityCount;
+        public List<RewardEntry> utilityTable = new ArrayList<>();
 
         public static StreakTier of(int kills, RewardEntry... entries) {
             StreakTier tier = new StreakTier();
             tier.kills = kills;
             tier.rewardTable = new ArrayList<>(List.of(entries));
             return tier;
+        }
+
+        // Adds utility draws taken alongside the main reward.
+        public StreakTier utilities(int count, RewardEntry... entries) {
+            this.utilityCount = count;
+            this.utilityTable = new ArrayList<>(List.of(entries));
+            return this;
         }
     }
 

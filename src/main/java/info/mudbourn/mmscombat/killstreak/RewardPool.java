@@ -17,11 +17,26 @@ public final class RewardPool {
     private RewardPool() {
     }
 
+    // The tier's main reward plus its utility draws; empty when the main table yields nothing, so no crate spawns.
     public static List<ItemStack> roll(StreakTier tier, ServerPlayer owner) {
+        List<ItemStack> rewards = new ArrayList<>(draw(tier.rewardTable, owner));
+        if (rewards.isEmpty()) {
+            return List.of();
+        }
+        if (tier.utilityTable != null) {
+            for (int i = 0; i < tier.utilityCount; i++) {
+                rewards.addAll(draw(tier.utilityTable, owner));
+            }
+        }
+        return rewards;
+    }
+
+    // One weighted draw from a table.
+    private static List<ItemStack> draw(List<RewardEntry> table, ServerPlayer owner) {
         // Resolve every entry up front and weight only among those that produce stacks, so an uninstalled reward never yields an empty roll and a missing crate.
         List<RewardEntry> available = new ArrayList<>();
         List<List<ItemStack>> resolved = new ArrayList<>();
-        for (RewardEntry entry : tier.rewardTable) {
+        for (RewardEntry entry : table) {
             if (Math.max(0, entry.weight) <= 0) {
                 continue;
             }
