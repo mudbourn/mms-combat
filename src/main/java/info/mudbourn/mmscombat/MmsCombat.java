@@ -3,6 +3,7 @@ package info.mudbourn.mmscombat;
 import info.mudbourn.mmscombat.combatlog.CombatManager;
 import info.mudbourn.mmscombat.config.CombatConfig;
 import info.mudbourn.mmscombat.killstreak.Perishable;
+import info.mudbourn.mmscombat.killstreak.RewardPool;
 import info.mudbourn.mmscombat.killstreak.StreakManager;
 import info.mudbourn.mmscombat.command.MmsCombatCommands;
 import info.mudbourn.mmscombat.net.CombatStatePayload;
@@ -28,6 +29,7 @@ public class MmsCombat implements ModInitializer {
         CombatManager.register();
         StreakManager.register();
         Perishable.register();
+        RewardPool.register();
 
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) ->
             MmsCombatCommands.register(dispatcher));

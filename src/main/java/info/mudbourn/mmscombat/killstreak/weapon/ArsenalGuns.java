@@ -22,9 +22,9 @@ final class ArsenalGuns {
         }
     }
 
-    // Guns that burn ammo too fast for three magazines carry four full stacks instead.
+    // Guns that burn ammo too fast for three magazines, and the revolver, carry full stacks instead.
     private static final Map<String, Loadout> LOADOUTS = Map.of(
-        "mms_arsenal:revolver", Loadout.magazines(8, "mms_arsenal:pistol_ammo"),
+        "mms_arsenal:revolver", new Loadout(8, "mms_arsenal:pistol_ammo", 64),
         "mms_arsenal:assault_rifle", Loadout.magazines(30, "mms_arsenal:rifle_ammo"),
         "mms_arsenal:bolt_action_rifle", Loadout.magazines(4, "mms_arsenal:rifle_ammo"),
         "mms_arsenal:light_machine_gun", new Loadout(100, "mms_arsenal:rifle_ammo", 4 * 64),
@@ -32,7 +32,7 @@ final class ArsenalGuns {
         "mms_arsenal:rocket_launcher", Loadout.magazines(1, "mms_arsenal:rocket"),
         "mms_arsenal:blossom_rifle", Loadout.magazines(30, "mms_arsenal:spectre_round"),
         "mms_arsenal:soulhunter_mk2", Loadout.magazines(30, "mms_arsenal:blaze_round"),
-        "mms_arsenal:hypersonic_cannon", Loadout.magazines(15, "minecraft:sculk_catalyst"));
+        "mms_arsenal:hypersonic_cannon", Loadout.magazines(1, "minecraft:sculk_catalyst"));
 
     private ArsenalGuns() {
     }
