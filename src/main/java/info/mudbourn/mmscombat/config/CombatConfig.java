@@ -13,7 +13,7 @@ import net.fabricmc.loader.api.FabricLoader;
 // The one JSON config for every subsystem, loaded once at startup and re-savable to backfill new defaults.
 public final class CombatConfig {
 
-    private static final int STREAK_TIERS_VERSION = 5;
+    private static final int STREAK_TIERS_VERSION = 6;
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static CombatConfig instance = new CombatConfig();
 
@@ -89,7 +89,10 @@ public final class CombatConfig {
             RewardEntry.gun("mms_arsenal:bolt_action_rifle", 1),
             RewardEntry.gun("mms_arsenal:light_machine_gun", 1),
             RewardEntry.gun("mms_arsenal:minigun", 1),
-            RewardEntry.gun("mms_arsenal:rocket_launcher", 1))
+            RewardEntry.gun("mms_arsenal:rocket_launcher", 1),
+            RewardEntry.gun("mms_arsenal:blossom_rifle", 1),
+            RewardEntry.gun("mms_arsenal:soulhunter_mk2", 1),
+            RewardEntry.gun("mms_arsenal:hypersonic_cannon", 1))
             .utilities(2,
                 RewardEntry.of("mms_arsenal:grenade", 1, 1),
                 RewardEntry.of("mms_arsenal:stun_grenade", 1, 1),
