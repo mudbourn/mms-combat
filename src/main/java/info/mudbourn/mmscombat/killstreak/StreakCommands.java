@@ -11,12 +11,14 @@ import info.mudbourn.mmscombat.killstreak.weapon.KillstreakWeapons;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.suggestion.Suggestions;
 import com.mojang.brigadier.suggestion.SuggestionsBuilder;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.SharedSuggestionProvider;
+import net.minecraft.commands.arguments.EntityArgument;
 import net.minecraft.commands.arguments.IdentifierArgument;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
@@ -65,6 +67,11 @@ public final class StreakCommands {
                 .then(Commands.argument("gun", IdentifierArgument.id())
                     .suggests(StreakCommands::suggestGuns)
                     .executes(StreakCommands::testGun)))
+            .then(Commands.literal("give")
+                .then(Commands.argument("targets", EntityArgument.players())
+                    .then(Commands.argument("item", IdentifierArgument.id())
+                        .suggests((ctx, builder) -> SharedSuggestionProvider.suggestResource(BuiltInRegistries.ITEM.keySet(), builder))
+                        .executes(StreakCommands::givePerishable))))
             .then(Commands.literal("addgun")
                 .then(Commands.argument("kills", IntegerArgumentType.integer(1))
                     .then(Commands.argument("gun", IdentifierArgument.id())
@@ -193,6 +200,27 @@ public final class StreakCommands {
         }
         ctx.getSource().sendSuccess(() -> Component.literal("Gave the perishable " + gun + " kit."), false);
         return 1;
+    }
+
+    // Temporary: gives each target an item bound to them as a perishable, as a crate reward would.
+    private static int givePerishable(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
+        Collection<ServerPlayer> targets = EntityArgument.getPlayers(ctx, "targets");
+        Identifier id = IdentifierArgument.getId(ctx, "item");
+        var item = BuiltInRegistries.ITEM.getOptional(id);
+        if (item.isEmpty()) {
+            ctx.getSource().sendFailure(Component.literal("No item " + id + "."));
+            return 0;
+        }
+        for (ServerPlayer target : targets) {
+            ItemStack stack = new ItemStack(item.get());
+            Perishable.bind(stack, target);
+            if (!target.addItem(stack)) {
+                target.drop(stack, false);
+            }
+        }
+        ctx.getSource().sendSuccess(
+            () -> Component.literal("Gave a perishable " + id + " to " + targets.size() + " player(s)."), true);
+        return targets.size();
     }
 
     private static int addGun(CommandContext<CommandSourceStack> ctx, int weight) {
