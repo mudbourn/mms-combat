@@ -4,6 +4,7 @@ import info.mudbourn.mmscombat.MmsCombat;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
@@ -28,6 +29,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.Container;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.entity.decoration.ItemFrame;
 import net.minecraft.world.entity.item.ItemEntity;
@@ -55,6 +57,14 @@ public final class Perishable {
     private static final String REVIVE_MOD = "absolutrevive";
     private static Method reviveModelLookup;
     private static boolean reviveLookupFailed;
+    private static final String TRASH_MOD = "trashslot";
+    private static Method trashGet;
+    private static Method trashSet;
+    private static boolean trashLookupFailed;
+    private static final String TRINKETS_MOD = "trinkets";
+    private static Method trinketsComponent;
+    private static Method trinketsInventory;
+    private static boolean trinketsLookupFailed;
 
     private Perishable() {
     }
@@ -123,7 +133,62 @@ public final class Perishable {
                 slot.set(ItemStack.EMPTY);
             }
         }
+        purgeTrashSlot(player);
+        purgeTrinkets(player);
         player.containerMenu.broadcastChanges();
+    }
+
+    // Empties TrashSlot's stash, which lives in player persistent data and survives death.
+    private static void purgeTrashSlot(ServerPlayer player) {
+        if (trashLookupFailed || !FabricLoader.getInstance().isModLoaded(TRASH_MOD)) {
+            return;
+        }
+        try {
+            if (trashGet == null) {
+                Class<?> helper = Class.forName("net.blay09.mods.trashslot.TrashHelper");
+                trashGet = helper.getMethod("getTrashItem", Player.class);
+                trashSet = helper.getMethod("setTrashItem", Player.class, ItemStack.class);
+            }
+            if (isPerishable((ItemStack) trashGet.invoke(null, player))) {
+                trashSet.invoke(null, player, ItemStack.EMPTY);
+            }
+        } catch (ReflectiveOperationException | ClassCastException e) {
+            MmsCombat.LOG.error("TrashSlot purge failed; disabling it", e);
+            trashLookupFailed = true;
+        }
+    }
+
+    // Empties every Trinkets slot, including the back and belt slots Combat Amenities stores into.
+    private static void purgeTrinkets(ServerPlayer player) {
+        if (trinketsLookupFailed || !FabricLoader.getInstance().isModLoaded(TRINKETS_MOD)) {
+            return;
+        }
+        try {
+            if (trinketsComponent == null) {
+                trinketsComponent = Class.forName("dev.emi.trinkets.api.TrinketsApi")
+                    .getMethod("getTrinketComponent", LivingEntity.class);
+                trinketsInventory = Class.forName("dev.emi.trinkets.api.TrinketComponent")
+                    .getMethod("getInventory");
+            }
+            Optional<?> component = (Optional<?>) trinketsComponent.invoke(null, player);
+            if (component.isEmpty()) {
+                return;
+            }
+            Map<?, ?> groups = (Map<?, ?>) trinketsInventory.invoke(component.get());
+            for (Object group : groups.values()) {
+                for (Object slots : ((Map<?, ?>) group).values()) {
+                    Container container = (Container) slots;
+                    for (int i = 0; i < container.getContainerSize(); i++) {
+                        if (isPerishable(container.getItem(i))) {
+                            container.setItem(i, ItemStack.EMPTY);
+                        }
+                    }
+                }
+            }
+        } catch (ReflectiveOperationException | ClassCastException e) {
+            MmsCombat.LOG.error("Trinkets purge failed; disabling it", e);
+            trinketsLookupFailed = true;
+        }
     }
 
     private static void tick(MinecraftServer server) {
