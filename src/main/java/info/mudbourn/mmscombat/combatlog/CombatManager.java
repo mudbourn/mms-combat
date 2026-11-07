@@ -118,6 +118,7 @@ public final class CombatManager {
         deadlines.put(player.getUUID(), deadline);
         if (!wasFlagged) {
             playCombatSound(player, MmsCombatRegistries.COMBAT_START);
+            LoadoutChoices.prompt(player);
         }
         syncCombatTeam(player);
         sendState(player, true, combatSeconds(player), inFlaggingZone(player));
@@ -142,6 +143,7 @@ public final class CombatManager {
         }
         if (on && !wasFlagged) {
             playCombatSound(player, MmsCombatRegistries.COMBAT_START);
+            LoadoutChoices.prompt(player);
         }
         forgetSentState(player.getUUID());
         syncCombatTeam(player);
@@ -249,6 +251,7 @@ public final class CombatManager {
     private void holdInZone(ServerPlayer player) {
         if (!isFlagged(player)) {
             playCombatSound(player, MmsCombatRegistries.COMBAT_START);
+            LoadoutChoices.prompt(player);
         }
         deadlines.put(player.getUUID(), player.level().getGameTime() + CombatConfig.get().combatTicks);
     }

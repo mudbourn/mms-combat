@@ -64,7 +64,7 @@ public final class LogoutBodyManager {
         for (int slot = 0; slot < inventory.getContainerSize(); slot++) {
             ItemStack stack = inventory.getItem(slot);
             if (!stack.isEmpty()) {
-                snapshot.add(stack.copy());
+                snapshot.add(LoadoutChoices.fairCopy(player.getUUID(), stack));
             }
         }
 
@@ -81,7 +81,7 @@ public final class LogoutBodyManager {
         body.setHideDescription(true);
         body.addTag(BODY_TAG);
         for (EquipmentSlot slot : VISIBLE_SLOTS) {
-            body.setItemSlot(slot, player.getItemBySlot(slot).copy());
+            body.setItemSlot(slot, LoadoutChoices.fairCopy(player.getUUID(), player.getItemBySlot(slot)));
         }
         copyAttribute(player, body, Attributes.SCALE);
         copyAttribute(player, body, Attributes.MAX_HEALTH);

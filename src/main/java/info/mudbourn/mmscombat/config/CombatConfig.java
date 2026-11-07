@@ -21,6 +21,7 @@ public final class CombatConfig {
     public boolean countPvE = false;
     public int bodyLingerTicks = 600;
     public boolean bodyForceLoad = true;
+    public boolean nerfLogoutGear = true;
     public int hudUpdateInterval = 10;
 
     public int streakDecayTicks = 200;

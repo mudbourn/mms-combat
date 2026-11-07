@@ -1,12 +1,15 @@
 package info.mudbourn.mmscombat;
 
 import info.mudbourn.mmscombat.combatlog.CombatManager;
+import info.mudbourn.mmscombat.combatlog.LoadoutChoices;
 import info.mudbourn.mmscombat.config.CombatConfig;
 import info.mudbourn.mmscombat.killstreak.Perishable;
 import info.mudbourn.mmscombat.killstreak.RewardPool;
 import info.mudbourn.mmscombat.killstreak.StreakManager;
 import info.mudbourn.mmscombat.command.MmsCombatCommands;
 import info.mudbourn.mmscombat.net.CombatStatePayload;
+import info.mudbourn.mmscombat.net.LoadoutChoicePayload;
+import info.mudbourn.mmscombat.net.LoadoutPromptPayload;
 import info.mudbourn.mmscombat.registry.MmsCombatRegistries;
 import info.mudbourn.mmscombat.zone.ZoneStore;
 import net.fabricmc.api.ModInitializer;
@@ -26,6 +29,9 @@ public class MmsCombat implements ModInitializer {
         CombatConfig.load();
         MmsCombatRegistries.register();
         PayloadTypeRegistry.playS2C().register(CombatStatePayload.TYPE, CombatStatePayload.CODEC);
+        PayloadTypeRegistry.playS2C().register(LoadoutPromptPayload.TYPE, LoadoutPromptPayload.CODEC);
+        PayloadTypeRegistry.playC2S().register(LoadoutChoicePayload.TYPE, LoadoutChoicePayload.CODEC);
+        LoadoutChoices.register();
         CombatManager.register();
         StreakManager.register();
         Perishable.register();
