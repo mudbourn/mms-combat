@@ -1,5 +1,7 @@
 {
   "text.mms_combat.in_combat": "In Combat",
   "subtitles.mms_combat.combat_start": "Combat started",
-  "subtitles.mms_combat.combat_end": "Combat ended"
+  "subtitles.mms_combat.combat_end": "Combat ended",
+  "key.mms_combat.self_revive": "Self-Revive",
+  "key.category.mms_combat.revive": "Revive"
 }
