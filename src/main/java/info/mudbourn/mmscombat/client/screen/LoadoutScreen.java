@@ -4,6 +4,7 @@ import info.mudbourn.mmscombat.combatlog.FairPlayEnchants;
 import info.mudbourn.mmscombat.net.LoadoutChoicePayload;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
@@ -25,14 +26,16 @@ public final class LoadoutScreen extends Screen {
     private static final int GREEN = 0xFF55FF55;
 
     private final List<ItemStack> originals;
+    private final List<Optional<ItemEnchantments>> saved;
     private final List<ItemEnchantments.Mutable> picks = new ArrayList<>();
     private int page;
     private Button confirm;
 
-    public LoadoutScreen(List<ItemStack> originals) {
+    public LoadoutScreen(List<ItemStack> originals, List<Optional<ItemEnchantments>> saved) {
         super(Component.literal("Combat Log Fair Use"));
         this.originals = originals;
-        resetPicks();
+        this.saved = saved;
+        loadPicks();
     }
 
     @Override
@@ -75,7 +78,7 @@ public final class LoadoutScreen extends Screen {
         ItemEnchantments chosen = picks.get(page).toImmutable();
         graphics.drawCenteredString(font, title, center, top - 24, WHITE);
         graphics.drawCenteredString(font,
-            Component.literal("Pick what your logout body loses. Auto drops levels for you."),
+            Component.literal("Pick what your logout body loses. Saved picks skip this screen; /loadout edits them."),
             center, top - 12, GRAY);
         graphics.renderItem(original, center - 110, top);
         graphics.drawString(font, original.getHoverName(), center - 88, top + 4, WHITE);
@@ -136,6 +139,14 @@ public final class LoadoutScreen extends Screen {
             legal &= FairPlayEnchants.fits(originals.get(i), picks.get(i).toImmutable());
         }
         confirm.active = legal;
+    }
+
+    private void loadPicks() {
+        resetPicks();
+        for (int i = 0; i < picks.size() && i < saved.size(); i++) {
+            int index = i;
+            saved.get(i).ifPresent(levels -> picks.set(index, new ItemEnchantments.Mutable(levels)));
+        }
     }
 
     private void resetPicks() {

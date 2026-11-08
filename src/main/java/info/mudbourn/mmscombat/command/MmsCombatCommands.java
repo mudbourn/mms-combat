@@ -6,6 +6,7 @@ import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import info.mudbourn.mmscombat.MmsCombat;
 import info.mudbourn.mmscombat.combatlog.CombatManager;
+import info.mudbourn.mmscombat.combatlog.LoadoutChoices;
 import info.mudbourn.mmscombat.combatlog.FairPlayEnchants;
 import info.mudbourn.mmscombat.config.CombatConfig;
 import info.mudbourn.mmscombat.config.CombatConfig.StreakTier;
@@ -66,6 +67,24 @@ public final class MmsCombatCommands {
             .executes(MmsCombatCommands::combatLogToggle)
             .then(Commands.literal("on").executes(ctx -> combatLog(ctx, true)))
             .then(Commands.literal("off").executes(ctx -> combatLog(ctx, false))));
+        // Open to every player: review and save their enchant level picks ahead of combat.
+        dispatcher.register(Commands.literal("loadout")
+            .executes(MmsCombatCommands::loadout)
+            .then(Commands.literal("clear").executes(MmsCombatCommands::loadoutClear)));
+    }
+
+    private static int loadout(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
+        if (LoadoutChoices.edit(self(ctx)) == 0) {
+            ctx.getSource().sendFailure(Component.literal("You carry nothing over the enchant level budget."));
+            return 0;
+        }
+        return 1;
+    }
+
+    private static int loadoutClear(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
+        LoadoutChoices.clear(self(ctx));
+        ctx.getSource().sendSuccess(() -> Component.literal("Cleared your saved enchant level picks."), false);
+        return 1;
     }
 
     private static int combatLogToggle(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {

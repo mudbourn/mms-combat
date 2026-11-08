@@ -35,7 +35,7 @@ public class MmsCombatClient implements ClientModInitializer {
                 payload.streak(),
                 payload.decaySeconds())));
         ClientPlayNetworking.registerGlobalReceiver(LoadoutPromptPayload.TYPE, (payload, context) ->
-            context.client().execute(() -> context.client().setScreen(new LoadoutScreen(payload.items()))));
+            context.client().execute(() -> context.client().setScreen(new LoadoutScreen(payload.items(), payload.saved()))));
         HudElementRegistry.attachElementAfter(
             VanillaHudElements.HOTBAR,
             CombatHudRenderer.ID,
