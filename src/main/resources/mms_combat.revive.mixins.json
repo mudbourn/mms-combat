@@ -1,0 +1,14 @@
+{
+  "required": true,
+  "package": "info.mudbourn.mmscombat.compat.revive",
+  "plugin": "info.mudbourn.mmscombat.compat.revive.ReviveMixinPlugin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "DownedDamageMixin",
+    "DownedLivingEntityMixin",
+    "PlayerDamageModelMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

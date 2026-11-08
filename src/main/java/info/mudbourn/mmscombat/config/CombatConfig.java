@@ -24,6 +24,9 @@ public final class CombatConfig {
     public boolean nerfLogoutGear = true;
     public int hudUpdateInterval = 10;
 
+    public int selfReviveTicks = 110;
+    public int selfReviveUses = 3;
+
     public int streakDecayTicks = 200;
     public int streakDecayAmount = 1;
 
@@ -64,6 +67,8 @@ public final class CombatConfig {
         combatTicks = Math.max(20, combatTicks);
         bodyLingerTicks = Math.max(600, bodyLingerTicks);
         hudUpdateInterval = Math.max(1, hudUpdateInterval);
+        selfReviveTicks = Math.max(1, selfReviveTicks);
+        selfReviveUses = Math.max(0, selfReviveUses);
         streakDecayTicks = Math.max(0, streakDecayTicks);
         streakDecayAmount = Math.max(1, streakDecayAmount);
         if (streakTiers == null || streakTiers.isEmpty() || streakTiersVersion < STREAK_TIERS_VERSION) {

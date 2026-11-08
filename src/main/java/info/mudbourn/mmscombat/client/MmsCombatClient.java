@@ -1,6 +1,7 @@
 package info.mudbourn.mmscombat.client;
 
 import info.mudbourn.mmscombat.MmsCombat;
+import info.mudbourn.mmscombat.client.compat.SelfReviveKey;
 import info.mudbourn.mmscombat.client.hud.CombatHudRenderer;
 import info.mudbourn.mmscombat.client.hud.CombatHudState;
 import info.mudbourn.mmscombat.client.render.KillstreakCrateRenderer;
@@ -43,6 +44,9 @@ public class MmsCombatClient implements ClientModInitializer {
             mod,
             Component.literal("MMS 3D Weapon Models"),
             PackActivationType.DEFAULT_ENABLED));
+        if (FabricLoader.getInstance().isModLoaded("absolutrevive")) {
+            SelfReviveKey.register();
+        }
         EntityRendererRegistry.register(MmsCombatRegistries.KILLSTREAK_CRATE, KillstreakCrateRenderer::new);
     }
 }

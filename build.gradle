@@ -53,6 +53,9 @@ dependencies {
     // GeckoLib is JEG's own required dependency, provided the same way.
     modCompileOnly files("libs/geckolib-fabric-1.21.11-5.4.5.jar")
     runtimeMods files("libs/geckolib-fabric-1.21.11-5.4.5.jar")
+    // Absolute Revive is the downed state the self-revive compat hooks; optional, same local jar wiring.
+    modCompileOnly files("libs/absolutrevive-v1.2.1b.jar")
+    runtimeMods files("libs/absolutrevive-v1.2.1b.jar")
     // Night Config core, which JEG's bundled toml jar needs but JEG does not ship.
     localRuntime "com.electronwill.night-config:core:3.8.1"
     // Client-only Mojang library that Bren logs through on the server tick; bundle it so a
