@@ -23,8 +23,7 @@ public abstract class EnchantmentHelperMixin {
             value = "INVOKE",
             target = "Lnet/minecraft/world/item/ItemStack;getOrDefault(Lnet/minecraft/core/component/DataComponentType;Ljava/lang/Object;)Ljava/lang/Object;"
         ),
-        require = 3,
-        allow = 3
+        require = 1
     )
     private static Object mmsCombat$fairLevels(Object enchantments, @Local(argsOnly = true) ItemStack stack) {
         return PvpEnchants.levels(stack, (ItemEnchantments) enchantments);
