@@ -26,6 +26,7 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.damagesource.DamageSource;
@@ -117,9 +118,21 @@ public final class SelfRevive {
         player.hurtServer(level, source, Float.MAX_VALUE);
     }
 
-    // Makes the downed player flinch as if hurt and takes time off their death countdown.
+    // Makes the downed player flinch and cry out as if hurt and takes time off their death countdown.
     private static void strain(ServerPlayer player, PlayerDamageModel model) {
-        player.level().broadcastDamageEvent(player, player.damageSources().generic());
+        DamageSource source = player.damageSources().generic();
+        player.level().broadcastDamageEvent(player, source);
+        if (!SelfReviveEvents.STRAIN.invoker().onStrain(player, source)) {
+            player.level().playSound(
+                player,
+                player.getX(),
+                player.getY(),
+                player.getZ(),
+                SoundEvents.PLAYER_HURT,
+                player.getSoundSource(),
+                1.0F,
+                (player.getRandom().nextFloat() - player.getRandom().nextFloat()) * 0.2F + 1.0F);
+        }
         PlayerDamageModelAccessor countdown = (PlayerDamageModelAccessor) model;
         int left = countdown.mmsCombat$getUnconsciousTicks() - CombatConfig.get().selfReviveStrainTicks;
         countdown.mmsCombat$setUnconsciousTicks(Math.max(MIN_DEATH_TICKS, left));
@@ -164,7 +177,7 @@ public final class SelfRevive {
             if (usesLeft(id) <= 0) {
                 showStatus(player, "Your injuries are very severe. Be careful.", ChatFormatting.RED);
             } else {
-                showStatus(player, "You got back up.", ChatFormatting.GREEN);
+                showStatus(player, "Recovered", ChatFormatting.GREEN);
             }
         }
     }

@@ -59,9 +59,6 @@ public final class SelfReviveHud {
                 .append(SelfReviveKey.key().getTranslatedKeyMessage())
                 .append(" for " + seconds + " seconds to get up.");
         }
-        if (status.severe()) {
-            text = text.copy().append(" Your injuries are very severe.");
-        }
         int x = graphics.guiWidth() / 2;
         int y = graphics.guiHeight() / 2 + 75;
         graphics.drawCenteredString(client.font, text, x, y, 0xFFFFFFFF);
