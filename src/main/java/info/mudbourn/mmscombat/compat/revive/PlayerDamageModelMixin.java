@@ -1,6 +1,7 @@
 package info.mudbourn.mmscombat.compat.revive;
 
 import goetic.mods.absolutrevive.common.damagesystem.PlayerDamageModel;
+import info.mudbourn.mmscombat.revive.SelfRevive;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;

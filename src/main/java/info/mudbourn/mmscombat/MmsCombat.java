@@ -2,7 +2,7 @@ package info.mudbourn.mmscombat;
 
 import info.mudbourn.mmscombat.combatlog.CombatManager;
 import info.mudbourn.mmscombat.combatlog.LoadoutChoices;
-import info.mudbourn.mmscombat.compat.revive.SelfRevive;
+import info.mudbourn.mmscombat.revive.SelfRevive;
 import info.mudbourn.mmscombat.config.CombatConfig;
 import info.mudbourn.mmscombat.killstreak.Perishable;
 import info.mudbourn.mmscombat.killstreak.RewardPool;

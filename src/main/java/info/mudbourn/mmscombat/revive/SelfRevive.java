@@ -1,4 +1,4 @@
-package info.mudbourn.mmscombat.compat.revive;
+package info.mudbourn.mmscombat.revive;
 
 import goetic.mods.absolutrevive.common.damagesystem.PlayerDamageModel;
 import goetic.mods.absolutrevive.common.util.CommonUtils;
