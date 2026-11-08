@@ -1,14 +1,22 @@
 package info.mudbourn.mmscombat.combatlog;
 
+import info.mudbourn.mmscombat.MmsCombat;
 import java.util.List;
 import net.minecraft.core.Holder;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.Identifier;
+import net.minecraft.tags.TagKey;
 import net.minecraft.tags.EnchantmentTags;
 import net.minecraft.tags.ItemTags;
 import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.ai.attributes.AttributeModifier;
+import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.item.component.ItemAttributeModifiers;
 import net.minecraft.world.item.enchantment.ConditionalEffect;
 import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.EnchantmentEffectComponents;
@@ -25,6 +33,21 @@ import net.minecraft.world.item.equipment.Equippable;
 public final class FairPlayEnchants {
 
     public static final int UNCAPPED = -1;
+    private static final int[] ARMOR_BUDGETS = {4, 2, 0};
+    private static final TagKey<Item> IRON_TIER_ARMOR = TagKey.create(
+        Registries.ITEM,
+        Identifier.fromNamespaceAndPath(MmsCombat.MOD_ID, "fair_play/iron_tier_armor"));
+    private static final int[] MELEE_BUDGETS = {10, 8, 6};
+    private static final double BASE_DAMAGE = 1;
+    private static final double BASE_SPEED = 4;
+    // Damage per second of vanilla iron, diamond and netherite swords.
+    private static final double[] SWORD_DPS = {9.6, 11.2, 12.8};
+    // Armor plus toughness per slot (head, chest, legs, feet) for vanilla iron, diamond and netherite.
+    private static final double[][] ARMOR_SCORES = {
+        {2, 6, 5, 2},
+        {5, 10, 8, 5},
+        {6, 11, 9, 6}
+    };
 
     private FairPlayEnchants() {
     }
@@ -99,14 +122,88 @@ public final class FairPlayEnchants {
             || path.contains("chain_crossbow")) {
             return 7;
         }
-        if (stack.is(ItemTags.SWORDS) || stack.is(ItemTags.AXES) || path.endsWith("_spear")) {
-            return tiered(path, 10, 8, 6);
-        }
         Equippable equippable = stack.get(DataComponents.EQUIPPABLE);
         if (equippable != null && equippable.slot().getType() == EquipmentSlot.Type.HUMANOID_ARMOR) {
-            return tiered(path, 4, 2, 0);
+            if (stack.is(IRON_TIER_ARMOR)) {
+                return ARMOR_BUDGETS[0];
+            }
+            return ARMOR_BUDGETS[armorTier(stack, equippable.slot())];
         }
-        return UNCAPPED;
+        int melee = meleeTier(stack, path);
+        return melee < 0 ? UNCAPPED : MELEE_BUDGETS[melee];
+    }
+
+    // Ranks a melee weapon against vanilla iron, diamond and netherite swords by damage per second, one tier higher if it grants any other buff; -1 for a non-weapon.
+    private static int meleeTier(ItemStack stack, String path) {
+        if (stack.is(ItemTags.PICKAXES) || stack.is(ItemTags.SHOVELS) || stack.is(ItemTags.HOES)) {
+            return -1;
+        }
+        double damage = 0;
+        double speed = 0;
+        boolean buffed = false;
+        ItemAttributeModifiers modifiers = stack.getOrDefault(
+            DataComponents.ATTRIBUTE_MODIFIERS,
+            ItemAttributeModifiers.EMPTY);
+        for (ItemAttributeModifiers.Entry entry : modifiers.modifiers()) {
+            if (!entry.slot().test(EquipmentSlot.MAINHAND)) {
+                continue;
+            }
+            boolean added = entry.modifier().operation() == AttributeModifier.Operation.ADD_VALUE;
+            if (entry.attribute().is(Attributes.ATTACK_DAMAGE)) {
+                damage += added ? entry.modifier().amount() : 0;
+            } else if (entry.attribute().is(Attributes.ATTACK_SPEED)) {
+                speed += added ? entry.modifier().amount() : 0;
+            } else {
+                buffed = true;
+            }
+        }
+        if (damage <= 0) {
+            return -1;
+        }
+        double dps = (BASE_DAMAGE + damage) * Math.max(0, BASE_SPEED + speed);
+        int tier = 0;
+        for (int next = 1; next < SWORD_DPS.length; next++) {
+            if (dps >= SWORD_DPS[next]) {
+                tier = next;
+            }
+        }
+        int named = tiered(path, 0, 1, 2);
+        tier = Math.max(tier, named == UNCAPPED ? 0 : named);
+        return Math.min(tier + (buffed ? 1 : 0), MELEE_BUDGETS.length - 1);
+    }
+
+    // Ranks a piece against vanilla iron, diamond and netherite in its slot by armor plus toughness, one tier higher if it grants any other buff.
+    private static int armorTier(ItemStack stack, EquipmentSlot slot) {
+        double score = 0;
+        boolean buffed = false;
+        ItemAttributeModifiers modifiers = stack.getOrDefault(
+            DataComponents.ATTRIBUTE_MODIFIERS,
+            ItemAttributeModifiers.EMPTY);
+        for (ItemAttributeModifiers.Entry entry : modifiers.modifiers()) {
+            if (!entry.slot().test(slot)) {
+                continue;
+            }
+            if (entry.attribute().is(Attributes.ARMOR) || entry.attribute().is(Attributes.ARMOR_TOUGHNESS)) {
+                if (entry.modifier().operation() == AttributeModifier.Operation.ADD_VALUE) {
+                    score += entry.modifier().amount();
+                }
+            } else if (!entry.attribute().is(Attributes.KNOCKBACK_RESISTANCE)) {
+                buffed = true;
+            }
+        }
+        int index = switch (slot) {
+            case HEAD -> 0;
+            case CHEST -> 1;
+            case LEGS -> 2;
+            default -> 3;
+        };
+        int tier = 0;
+        for (int next = 1; next < ARMOR_SCORES.length; next++) {
+            if (score >= ARMOR_SCORES[next][index]) {
+                tier = next;
+            }
+        }
+        return Math.min(tier + (buffed ? 1 : 0), ARMOR_BUDGETS.length - 1);
     }
 
     // Whether the enchant raises damage, vanilla or data-driven.

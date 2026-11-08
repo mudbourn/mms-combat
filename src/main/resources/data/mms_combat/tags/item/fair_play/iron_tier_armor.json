@@ -1,0 +1,20 @@
+{
+  "values": [
+    {
+      "id": "enderscape:shadoline_helmet",
+      "required": false
+    },
+    {
+      "id": "enderscape:shadoline_chestplate",
+      "required": false
+    },
+    {
+      "id": "enderscape:shadoline_leggings",
+      "required": false
+    },
+    {
+      "id": "enderscape:shadoline_boots",
+      "required": false
+    }
+  ]
+}

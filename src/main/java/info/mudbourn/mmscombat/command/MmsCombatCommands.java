@@ -4,7 +4,9 @@ import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import info.mudbourn.mmscombat.MmsCombat;
 import info.mudbourn.mmscombat.combatlog.CombatManager;
+import info.mudbourn.mmscombat.combatlog.FairPlayEnchants;
 import info.mudbourn.mmscombat.config.CombatConfig;
 import info.mudbourn.mmscombat.config.CombatConfig.StreakTier;
 import info.mudbourn.mmscombat.killstreak.StreakCommands;
@@ -14,9 +16,12 @@ import info.mudbourn.mmscombat.zone.ZoneStore;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.arguments.EntityArgument;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
 
 // The op-gated /mmscombat root: the zone subtree plus test hooks that drive combat, streaks, and rewards without a second player.
 public final class MmsCombatCommands {
@@ -52,7 +57,10 @@ public final class MmsCombatCommands {
                         .executes(ctx -> streak(ctx, EntityArgument.getPlayer(ctx, "target"))))))
             .then(Commands.literal("reward")
                 .then(Commands.argument("tierKills", IntegerArgumentType.integer(1))
-                    .executes(ctx -> reward(ctx, self(ctx))))));
+                    .executes(ctx -> reward(ctx, self(ctx)))))
+            .then(Commands.literal("fairplay")
+                .then(Commands.literal("held").executes(MmsCombatCommands::fairPlayHeld))
+                .then(Commands.literal("dump").executes(MmsCombatCommands::fairPlayDump))));
         // Open to every player: opt in or out of PvP; it is off by default.
         dispatcher.register(Commands.literal("combatlog")
             .executes(MmsCombatCommands::combatLogToggle)
@@ -139,6 +147,32 @@ public final class MmsCombatCommands {
         ctx.getSource().sendSuccess(
             () -> Component.literal("Spawned a reward chest for the " + kills + "-kill tier."), true);
         return 1;
+    }
+
+    private static int fairPlayHeld(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
+        ItemStack stack = self(ctx).getMainHandItem();
+        int budget = FairPlayEnchants.budget(stack);
+        String cap = budget == FairPlayEnchants.UNCAPPED ? "uncapped" : budget + " EL";
+        ctx.getSource().sendSuccess(
+            () -> Component.literal(BuiltInRegistries.ITEM.getKey(stack.getItem()) + ": " + cap),
+            false);
+        return 1;
+    }
+
+    private static int fairPlayDump(CommandContext<CommandSourceStack> ctx) {
+        int count = 0;
+        for (Item item : BuiltInRegistries.ITEM) {
+            int budget = FairPlayEnchants.budget(new ItemStack(item));
+            if (budget != FairPlayEnchants.UNCAPPED) {
+                MmsCombat.LOG.info("Fair play cap {}: {} EL", BuiltInRegistries.ITEM.getKey(item), budget);
+                count++;
+            }
+        }
+        int capped = count;
+        ctx.getSource().sendSuccess(
+            () -> Component.literal("Logged fair play caps for " + capped + " items to the server log."),
+            false);
+        return capped;
     }
 
     private static String zonesAt(ServerPlayer player) {
