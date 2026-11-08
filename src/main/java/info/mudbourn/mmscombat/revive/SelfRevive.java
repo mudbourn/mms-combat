@@ -4,12 +4,16 @@ import goetic.mods.absolutrevive.common.damagesystem.PlayerDamageModel;
 import goetic.mods.absolutrevive.common.util.CommonUtils;
 import info.mudbourn.mmscombat.config.CombatConfig;
 import info.mudbourn.mmscombat.net.SelfRevivePayload;
+import info.mudbourn.mmscombat.net.SelfReviveStatusPayload;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.protocol.game.ClientboundSetSubtitleTextPacket;
+import net.minecraft.network.protocol.game.ClientboundSetTitleTextPacket;
+import net.minecraft.network.protocol.game.ClientboundSetTitlesAnimationPacket;
 import net.minecraft.server.level.ServerPlayer;
 
 // Per-player self-revive progress and the per-life use budget.
@@ -17,6 +21,7 @@ public final class SelfRevive {
 
     private static final Map<UUID, Integer> PROGRESS = new HashMap<>();
     private static final Map<UUID, Integer> USES = new HashMap<>();
+    private static final int STATUS_INTERVAL = 10;
 
     private SelfRevive() {
     }
@@ -34,8 +39,7 @@ public final class SelfRevive {
             || PROGRESS.containsKey(id)) {
             return;
         }
-        if (USES.getOrDefault(id, 0) >= CombatConfig.get().selfReviveUses) {
-            showStatus(player, "You're too injured to get up.", ChatFormatting.RED);
+        if (usesLeft(id) <= 0) {
             return;
         }
         PROGRESS.put(id, 0);
@@ -43,17 +47,20 @@ public final class SelfRevive {
 
     public static void tick(ServerPlayer player, PlayerDamageModel model) {
         UUID id = player.getUUID();
-        if (!PROGRESS.containsKey(id)) {
-            return;
-        }
         if (!model.isUnconscious() || !model.canBeRescued()) {
             PROGRESS.remove(id);
+            return;
+        }
+        if (!PROGRESS.containsKey(id)) {
+            if (player.tickCount % STATUS_INTERVAL == 0) {
+                sendStatus(player, usesLeft(id), -1);
+            }
             return;
         }
         int ticks = PROGRESS.merge(id, 1, Integer::sum);
         int duration = CombatConfig.get().selfReviveTicks;
         if (ticks < duration) {
-            showStatus(player, "Getting up... " + ticks * 100 / duration + "%", ChatFormatting.YELLOW);
+            sendStatus(player, usesLeft(id), ticks * 100 / duration);
             return;
         }
         PROGRESS.remove(id);
@@ -63,8 +70,18 @@ public final class SelfRevive {
         }
     }
 
+    private static int usesLeft(UUID id) {
+        return CombatConfig.get().selfReviveUses - USES.getOrDefault(id, 0);
+    }
+
+    private static void sendStatus(ServerPlayer player, int usesLeft, int percent) {
+        ServerPlayNetworking.send(player, new SelfReviveStatusPayload(Math.max(0, usesLeft), percent));
+    }
+
     private static void showStatus(ServerPlayer player, String text, ChatFormatting color) {
-        player.displayClientMessage(Component.literal(text).withStyle(color), true);
+        player.connection.send(new ClientboundSetTitlesAnimationPacket(0, 40, 10));
+        player.connection.send(new ClientboundSetSubtitleTextPacket(Component.literal(text).withStyle(color)));
+        player.connection.send(new ClientboundSetTitleTextPacket(Component.empty()));
     }
 
     public static void reset(ServerPlayer player) {

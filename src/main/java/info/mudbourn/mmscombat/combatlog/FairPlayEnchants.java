@@ -2,6 +2,7 @@ package info.mudbourn.mmscombat.combatlog;
 
 import info.mudbourn.mmscombat.MmsCombat;
 import java.util.List;
+import java.util.function.Predicate;
 import net.minecraft.core.Holder;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -68,7 +69,7 @@ public final class FairPlayEnchants {
             if (level > base.getLevel(enchantment)) {
                 return false;
             }
-            if (enchantment.is(EnchantmentTags.CURSE)) {
+            if (!budgeted(original, enchantment)) {
                 continue;
             }
             total += level;
@@ -89,13 +90,14 @@ public final class FairPlayEnchants {
         }
         int paid = damageLevels(stack.getEnchantments());
         int cap = budget(stack);
+        Predicate<Holder<Enchantment>> budgeted = enchantment -> budgeted(stack, enchantment);
         EnchantmentHelper.updateEnchantments(stack, mutable -> {
-            while (sum(mutable, Kind.DAMAGE) + sum(mutable, Kind.STATUS) > paid) {
-                Kind kind = sum(mutable, Kind.DAMAGE) > 0 ? Kind.DAMAGE : Kind.STATUS;
-                lowerHighest(mutable, kind);
+            while (sum(mutable, Kind.DAMAGE::matches) + sum(mutable, Kind.STATUS::matches) > paid) {
+                Kind kind = sum(mutable, Kind.DAMAGE::matches) > 0 ? Kind.DAMAGE : Kind.STATUS;
+                lowerHighest(mutable, kind::matches);
             }
-            while (cap != UNCAPPED && sum(mutable, Kind.ANY) > cap) {
-                lowerHighest(mutable, Kind.ANY);
+            while (cap != UNCAPPED && sum(mutable, budgeted) > cap) {
+                lowerHighest(mutable, budgeted);
             }
         });
     }
@@ -109,6 +111,29 @@ public final class FairPlayEnchants {
                 }
             }
         });
+    }
+
+    // Total of the levels that count against the stack's budget.
+    public static int budgetedLevels(ItemStack stack, ItemEnchantments enchantments) {
+        int sum = 0;
+        for (Holder<Enchantment> enchantment : enchantments.keySet()) {
+            if (budgeted(stack, enchantment)) {
+                sum += enchantments.getLevel(enchantment);
+            }
+        }
+        return sum;
+    }
+
+    // Whether the enchant counts against the budget: curses and durability enchants never do.
+    private static boolean budgeted(ItemStack stack, Holder<Enchantment> enchantment) {
+        return !enchantment.is(EnchantmentTags.CURSE) && !isUpkeep(enchantment);
+    }
+
+    // Whether the enchant repairs the item or slows its durability loss, vanilla or data-driven.
+    public static boolean isUpkeep(Holder<Enchantment> enchantment) {
+        Enchantment value = enchantment.value();
+        return !value.getEffects(EnchantmentEffectComponents.REPAIR_WITH_XP).isEmpty()
+            || !value.getEffects(EnchantmentEffectComponents.ITEM_DAMAGE).isEmpty();
     }
 
     public static int budget(ItemStack stack) {
@@ -255,22 +280,22 @@ public final class FairPlayEnchants {
         return sum;
     }
 
-    private static int sum(ItemEnchantments.Mutable mutable, Kind kind) {
+    private static int sum(ItemEnchantments.Mutable mutable, Predicate<Holder<Enchantment>> kind) {
         int sum = 0;
         for (Holder<Enchantment> enchantment : mutable.keySet()) {
-            if (kind.matches(enchantment)) {
+            if (kind.test(enchantment)) {
                 sum += mutable.getLevel(enchantment);
             }
         }
         return sum;
     }
 
-    private static void lowerHighest(ItemEnchantments.Mutable mutable, Kind kind) {
+    private static void lowerHighest(ItemEnchantments.Mutable mutable, Predicate<Holder<Enchantment>> kind) {
         Holder<Enchantment> highest = null;
         int highestLevel = 0;
         for (Holder<Enchantment> enchantment : mutable.keySet()) {
             int level = mutable.getLevel(enchantment);
-            if (kind.matches(enchantment) && level > highestLevel) {
+            if (kind.test(enchantment) && level > highestLevel) {
                 highest = enchantment;
                 highestLevel = level;
             }
@@ -292,7 +317,6 @@ public final class FairPlayEnchants {
     }
 
     private enum Kind {
-        ANY,
         DAMAGE,
         STATUS;
 
@@ -301,7 +325,6 @@ public final class FairPlayEnchants {
                 return false;
             }
             return switch (this) {
-                case ANY -> true;
                 case STATUS -> isStatus(enchantment);
                 case DAMAGE -> !isStatus(enchantment) && isDamage(enchantment);
             };

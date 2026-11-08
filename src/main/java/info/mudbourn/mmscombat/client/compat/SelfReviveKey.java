@@ -27,7 +27,12 @@ public final class SelfReviveKey {
     private SelfReviveKey() {
     }
 
+    public static KeyMapping key() {
+        return KEY;
+    }
+
     public static void register() {
+        SelfReviveHud.register();
         ClientTickEvents.START_CLIENT_TICK.register(SelfReviveKey::tick);
     }
 

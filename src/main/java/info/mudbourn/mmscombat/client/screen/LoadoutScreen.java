@@ -81,7 +81,7 @@ public final class LoadoutScreen extends Screen {
         graphics.drawString(font, original.getHoverName(), center - 88, top + 4, WHITE);
         graphics.drawString(font, (page + 1) + "/" + originals.size(), center + 84, top + 4, GRAY);
         int cap = FairPlayEnchants.budget(original);
-        String budget = cap == FairPlayEnchants.UNCAPPED ? "no cap" : total(chosen) + "/" + cap + " EL";
+        String budget = cap == FairPlayEnchants.UNCAPPED ? "no cap" : FairPlayEnchants.budgetedLevels(original, chosen) + "/" + cap + " EL";
         graphics.drawString(font, budget, center - 88, top + 16, GRAY);
         List<Holder<Enchantment>> rows = rows();
         for (int i = 0; i < rows.size(); i++) {
@@ -89,7 +89,8 @@ public final class LoadoutScreen extends Screen {
             int y = top + 36 + i * ROW;
             int level = chosen.getLevel(enchantment);
             String tag = FairPlayEnchants.isStatus(enchantment) ? " [status]"
-                : FairPlayEnchants.isDamage(enchantment) ? " [damage]" : "";
+                : FairPlayEnchants.isDamage(enchantment) ? " [damage]"
+                : FairPlayEnchants.isUpkeep(enchantment) ? " [free]" : "";
             Component name = level > 0
                 ? Enchantment.getFullname(enchantment, level)
                 : Component.literal("off: ").append(enchantment.value().description());
@@ -115,16 +116,6 @@ public final class LoadoutScreen extends Screen {
             }
         }
         return rows;
-    }
-
-    private static int total(ItemEnchantments chosen) {
-        int sum = 0;
-        for (Holder<Enchantment> enchantment : chosen.keySet()) {
-            if (!enchantment.is(EnchantmentTags.CURSE)) {
-                sum += chosen.getLevel(enchantment);
-            }
-        }
-        return sum;
     }
 
     private void step(Holder<Enchantment> enchantment, int delta) {

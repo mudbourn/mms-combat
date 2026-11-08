@@ -1,6 +1,7 @@
 package info.mudbourn.mmscombat.client;
 
 import info.mudbourn.mmscombat.MmsCombat;
+import info.mudbourn.mmscombat.client.compat.SelfReviveHud;
 import info.mudbourn.mmscombat.client.compat.SelfReviveKey;
 import info.mudbourn.mmscombat.client.hud.CombatHudRenderer;
 import info.mudbourn.mmscombat.client.hud.CombatHudState;
@@ -8,6 +9,7 @@ import info.mudbourn.mmscombat.client.render.KillstreakCrateRenderer;
 import info.mudbourn.mmscombat.client.screen.LoadoutScreen;
 import info.mudbourn.mmscombat.net.CombatStatePayload;
 import info.mudbourn.mmscombat.net.LoadoutPromptPayload;
+import info.mudbourn.mmscombat.net.SelfReviveStatusPayload;
 import info.mudbourn.mmscombat.registry.MmsCombatRegistries;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
@@ -45,6 +47,8 @@ public class MmsCombatClient implements ClientModInitializer {
             Component.literal("MMS 3D Weapon Models"),
             PackActivationType.DEFAULT_ENABLED));
         if (FabricLoader.getInstance().isModLoaded("absolutrevive")) {
+            ClientPlayNetworking.registerGlobalReceiver(SelfReviveStatusPayload.TYPE, (payload, context) ->
+                context.client().execute(() -> SelfReviveHud.update(payload)));
             SelfReviveKey.register();
         }
         EntityRendererRegistry.register(MmsCombatRegistries.KILLSTREAK_CRATE, KillstreakCrateRenderer::new);

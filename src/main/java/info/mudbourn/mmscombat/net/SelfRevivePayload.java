@@ -6,7 +6,7 @@ import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.Identifier;
 
-// Client to server: a downed player pressed the inventory key to start a self-revive.
+// Client to server: a downed player pressed the self-revive key to start a self-revive.
 public record SelfRevivePayload() implements CustomPacketPayload {
 
     public static final SelfRevivePayload INSTANCE = new SelfRevivePayload();

@@ -12,6 +12,7 @@ import info.mudbourn.mmscombat.net.CombatStatePayload;
 import info.mudbourn.mmscombat.net.LoadoutChoicePayload;
 import info.mudbourn.mmscombat.net.LoadoutPromptPayload;
 import info.mudbourn.mmscombat.net.SelfRevivePayload;
+import info.mudbourn.mmscombat.net.SelfReviveStatusPayload;
 import info.mudbourn.mmscombat.registry.MmsCombatRegistries;
 import info.mudbourn.mmscombat.zone.ZoneStore;
 import net.fabricmc.api.ModInitializer;
@@ -36,6 +37,7 @@ public class MmsCombat implements ModInitializer {
         PayloadTypeRegistry.playS2C().register(LoadoutPromptPayload.TYPE, LoadoutPromptPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(LoadoutChoicePayload.TYPE, LoadoutChoicePayload.CODEC);
         PayloadTypeRegistry.playC2S().register(SelfRevivePayload.TYPE, SelfRevivePayload.CODEC);
+        PayloadTypeRegistry.playS2C().register(SelfReviveStatusPayload.TYPE, SelfReviveStatusPayload.CODEC);
         LoadoutChoices.register();
         CombatManager.register();
         StreakManager.register();
