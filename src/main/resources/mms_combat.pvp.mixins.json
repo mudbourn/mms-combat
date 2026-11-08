@@ -1,0 +1,14 @@
+{
+  "required": true,
+  "package": "info.mudbourn.mmscombat.combatlog.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "AbstractArrowMixin",
+    "EnchantmentHelperMixin",
+    "LivingEntityHurtMixin",
+    "PlayerAttackMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

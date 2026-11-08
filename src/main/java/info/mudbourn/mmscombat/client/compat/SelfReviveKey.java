@@ -11,7 +11,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.resources.Identifier;
 import org.lwjgl.glfw.GLFW;
 
-// Sends a self-revive request when the self-revive key is pressed while the local player is downed.
+// Tells the server when the local player starts or stops holding the self-revive key while downed.
 public final class SelfReviveKey {
 
     private static final KeyMapping.Category CATEGORY =
@@ -23,6 +23,8 @@ public final class SelfReviveKey {
         GLFW.GLFW_KEY_R,
         CATEGORY
     ));
+
+    private static boolean held;
 
     private SelfReviveKey() {
     }
@@ -37,15 +39,14 @@ public final class SelfReviveKey {
     }
 
     private static void tick(Minecraft client) {
-        boolean pressed = false;
         while (KEY.consumeClick()) {
-            pressed = true;
+            continue;
         }
-        if (client.player == null || client.screen != null || !EventHandler.isUnconscious(client.player)) {
-            return;
+        boolean downed = client.player != null && EventHandler.isUnconscious(client.player);
+        boolean holding = downed && client.screen == null && KEY.isDown();
+        if (holding != held && client.getConnection() != null) {
+            ClientPlayNetworking.send(new SelfRevivePayload(holding));
         }
-        if (pressed) {
-            ClientPlayNetworking.send(SelfRevivePayload.INSTANCE);
-        }
+        held = holding;
     }
 }

@@ -2,9 +2,9 @@ package info.mudbourn.mmscombat.client.compat;
 
 import goetic.mods.absolutrevive.common.EventHandler;
 import info.mudbourn.mmscombat.net.SelfReviveStatusPayload;
+import java.util.Locale;
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.fabricmc.fabric.api.event.Event;
-import net.minecraft.ChatFormatting;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -36,6 +36,10 @@ public final class SelfReviveHud {
         receivedAt = client.level == null ? 0 : client.level.getGameTime();
     }
 
+    private static String seconds(int ticks) {
+        return String.format(Locale.ROOT, "%.1f", ticks / 20.0);
+    }
+
     private static void render(GuiGraphics graphics, DeltaTracker delta) {
         Minecraft client = Minecraft.getInstance();
         if (status == null
@@ -46,19 +50,20 @@ public final class SelfReviveHud {
             || !EventHandler.isUnconscious(client.player)) {
             return;
         }
+        String seconds = seconds(status.duration());
         Component text;
-        if (status.percent() >= 0) {
-            text = Component.literal("Getting up... " + status.percent() + "%").withStyle(ChatFormatting.YELLOW);
-        } else if (status.usesLeft() > 0) {
-            text = Component.literal("Press [")
-                .append(SelfReviveKey.key().getTranslatedKeyMessage())
-                .append("] to get up on your own (" + status.usesLeft() + " left)")
-                .withStyle(ChatFormatting.GOLD);
+        if (status.ticks() >= 0) {
+            text = Component.literal("Getting up: " + seconds(status.ticks()) + " / " + seconds + " s");
         } else {
-            text = Component.literal("Too injured to get up on your own").withStyle(ChatFormatting.RED);
+            text = Component.literal("Hold ")
+                .append(SelfReviveKey.key().getTranslatedKeyMessage())
+                .append(" for " + seconds + " seconds to get up.");
+        }
+        if (status.severe()) {
+            text = text.copy().append(" Your injuries are very severe.");
         }
         int x = graphics.guiWidth() / 2;
-        int y = graphics.guiHeight() / 2 + 20;
+        int y = graphics.guiHeight() / 2 + 75;
         graphics.drawCenteredString(client.font, text, x, y, 0xFFFFFFFF);
     }
 }

@@ -3,5 +3,9 @@
   "subtitles.mms_combat.combat_start": "Combat started",
   "subtitles.mms_combat.combat_end": "Combat ended",
   "key.mms_combat.self_revive": "Self-Revive",
-  "key.category.mms_combat.revive": "Revive"
+  "key.category.mms_combat.revive": "Revive",
+  "death.attack.mms_combat.succumb": "%1$s succumbed to their injuries",
+  "death.attack.mms_combat.succumb.player": "%1$s succumbed to their injuries while fighting %2$s",
+  "death.attack.mms_combat.succumb_fighting": "%1$s succumbed to their injuries while fighting %2$s",
+  "death.attack.mms_combat.succumb_fighting.item": "%1$s succumbed to their injuries while fighting %2$s using %3$s"
 }

@@ -63,6 +63,20 @@ public final class LoadoutChoices {
         return copy;
     }
 
+    // The levels a stack fights with against another player: the first matching pick among the fighters, or the automatic nerf.
+    public static ItemEnchantments fairLevels(UUID[] owners, ItemStack stack) {
+        ItemStack copy = stack.copy();
+        for (UUID owner : owners) {
+            Choice choice = find(owner, stack);
+            if (choice != null) {
+                FairPlayEnchants.apply(copy, choice.levels);
+                return copy.getEnchantments();
+            }
+        }
+        FairPlayEnchants.nerf(copy);
+        return copy.getEnchantments();
+    }
+
     private static void receive(ServerPlayer player, List<ItemEnchantments> levels) {
         List<ItemStack> items = prompted.remove(player.getUUID());
         if (items == null || items.size() != levels.size()) {

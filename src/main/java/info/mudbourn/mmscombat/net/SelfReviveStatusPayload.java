@@ -7,17 +7,19 @@ import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.Identifier;
 
-// Server to client: a downed player's self-revive uses left and get-up progress (-1 when idle).
-public record SelfReviveStatusPayload(int usesLeft, int percent) implements CustomPacketPayload {
+// Server to client: whether a downed player's injuries are severe, and their get-up progress in ticks (-1 when idle) out of the full duration.
+public record SelfReviveStatusPayload(boolean severe, int ticks, int duration) implements CustomPacketPayload {
 
     public static final Type<SelfReviveStatusPayload> TYPE =
         new Type<>(Identifier.fromNamespaceAndPath(MmsCombat.MOD_ID, "self_revive_status"));
 
     public static final StreamCodec<ByteBuf, SelfReviveStatusPayload> CODEC = StreamCodec.composite(
+        ByteBufCodecs.BOOL,
+        SelfReviveStatusPayload::severe,
         ByteBufCodecs.VAR_INT,
-        SelfReviveStatusPayload::usesLeft,
+        SelfReviveStatusPayload::ticks,
         ByteBufCodecs.VAR_INT,
-        SelfReviveStatusPayload::percent,
+        SelfReviveStatusPayload::duration,
         SelfReviveStatusPayload::new
     );
 
