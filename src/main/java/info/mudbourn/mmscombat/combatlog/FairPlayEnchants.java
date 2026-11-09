@@ -2,6 +2,7 @@ package info.mudbourn.mmscombat.combatlog;
 
 import info.mudbourn.mmscombat.MmsCombat;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Predicate;
 import net.minecraft.core.Holder;
 import net.minecraft.core.component.DataComponents;
@@ -34,6 +35,20 @@ import net.minecraft.world.item.equipment.Equippable;
 public final class FairPlayEnchants {
 
     public static final int UNCAPPED = -1;
+    private static final int FREE_LEVELS = 6;
+    private static final String MOB_AI_TWEAKS = "mob-ai-tweaks";
+    private static final Identifier PERFECT_PARRY = Identifier.fromNamespaceAndPath(MOB_AI_TWEAKS, "perfect_parry");
+    private static final Set<Identifier> BANNED = Set.of(
+        Identifier.withDefaultNamespace("fire_aspect"),
+        Identifier.fromNamespaceAndPath("weaponsexpanded", "freeze"),
+        Identifier.fromNamespaceAndPath("weaponsexpanded", "frostbite"),
+        Identifier.fromNamespaceAndPath("weaponsexpanded", "polluting"),
+        Identifier.fromNamespaceAndPath("weaponsexpanded", "withering"));
+    private static final Set<Identifier> FREE = Set.of(
+        Identifier.withDefaultNamespace("sharpness"),
+        Identifier.withDefaultNamespace("protection"),
+        Identifier.withDefaultNamespace("power"),
+        Identifier.fromNamespaceAndPath("basicweapons", "might"));
     private static final int[] ARMOR_BUDGETS = {4, 2, 0};
     private static final TagKey<Item> IRON_TIER_ARMOR = TagKey.create(
         Registries.ITEM,
@@ -72,7 +87,7 @@ public final class FairPlayEnchants {
             if (!budgeted(original, enchantment)) {
                 continue;
             }
-            total += level;
+            total += cost(enchantment, level);
             if (isStatus(enchantment)) {
                 status += level;
             } else if (isDamage(enchantment)) {
@@ -96,8 +111,10 @@ public final class FairPlayEnchants {
                 Kind kind = sum(mutable, Kind.DAMAGE::matches) > 0 ? Kind.DAMAGE : Kind.STATUS;
                 lowerHighest(mutable, kind::matches);
             }
-            while (cap != UNCAPPED && sum(mutable, budgeted) > cap) {
-                lowerHighest(mutable, budgeted);
+            Predicate<Holder<Enchantment>> costly = enchantment -> budgeted.test(enchantment)
+                && cost(enchantment, mutable.getLevel(enchantment)) > 0;
+            while (cap != UNCAPPED && cost(mutable) > cap) {
+                lowerHighest(mutable, costly);
             }
         });
     }
@@ -118,15 +135,69 @@ public final class FairPlayEnchants {
         int sum = 0;
         for (Holder<Enchantment> enchantment : enchantments.keySet()) {
             if (budgeted(stack, enchantment)) {
-                sum += enchantments.getLevel(enchantment);
+                sum += cost(enchantment, enchantments.getLevel(enchantment));
             }
         }
         return sum;
     }
 
-    // Whether the enchant counts against the budget: curses and durability enchants never do.
+    // Whether the enchant counts against the budget: curses, durability, disallowed and capped-free enchants never do.
     private static boolean budgeted(ItemStack stack, Holder<Enchantment> enchantment) {
-        return !enchantment.is(EnchantmentTags.CURSE) && !isUpkeep(enchantment);
+        return !enchantment.is(EnchantmentTags.CURSE)
+            && !isUpkeep(enchantment)
+            && !disallowed(enchantment)
+            && !enchantment.is(PERFECT_PARRY);
+    }
+
+    // Whether the enchant is switched off in player-vs-player fights: every mob-ai-tweaks enchant but Perfect Parry, Fire Aspect and the frost and poison inflictors.
+    public static boolean disallowed(Holder<Enchantment> enchantment) {
+        if (enchantment.is(PERFECT_PARRY)) {
+            return false;
+        }
+        return enchantment.unwrapKey()
+            .map(key -> BANNED.contains(key.identifier()) || key.identifier().getNamespace().equals(MOB_AI_TWEAKS))
+            .orElse(false);
+    }
+
+    // Budget cost of a level: Sharpness, Might, Power and Protection are free up to level 6.
+    private static int cost(Holder<Enchantment> enchantment, int level) {
+        boolean free = enchantment.unwrapKey().map(key -> FREE.contains(key.identifier())).orElse(false);
+        return free ? Math.max(0, level - FREE_LEVELS) : level;
+    }
+
+    private static int cost(ItemEnchantments.Mutable mutable) {
+        int sum = 0;
+        for (Holder<Enchantment> enchantment : mutable.keySet()) {
+            if (budgeted(ItemStack.EMPTY, enchantment)) {
+                sum += cost(enchantment, mutable.getLevel(enchantment));
+            }
+        }
+        return sum;
+    }
+
+    // Strips disallowed enchants and holds Perfect Parry at level 1, returning the input unchanged when nothing applies.
+    public static ItemEnchantments restrict(ItemEnchantments enchantments) {
+        boolean changed = false;
+        for (Holder<Enchantment> enchantment : enchantments.keySet()) {
+            if (limit(enchantment) < enchantments.getLevel(enchantment)) {
+                changed = true;
+            }
+        }
+        if (!changed) {
+            return enchantments;
+        }
+        ItemEnchantments.Mutable mutable = new ItemEnchantments.Mutable(enchantments);
+        for (Holder<Enchantment> enchantment : enchantments.keySet()) {
+            mutable.set(enchantment, Math.min(limit(enchantment), enchantments.getLevel(enchantment)));
+        }
+        return mutable.toImmutable();
+    }
+
+    private static int limit(Holder<Enchantment> enchantment) {
+        if (disallowed(enchantment)) {
+            return 0;
+        }
+        return enchantment.is(PERFECT_PARRY) ? 1 : Integer.MAX_VALUE;
     }
 
     // Whether the enchant repairs the item or slows its durability loss, vanilla or data-driven.
@@ -321,7 +392,7 @@ public final class FairPlayEnchants {
         STATUS;
 
         boolean matches(Holder<Enchantment> enchantment) {
-            if (enchantment.is(EnchantmentTags.CURSE)) {
+            if (enchantment.is(EnchantmentTags.CURSE) || disallowed(enchantment)) {
                 return false;
             }
             return switch (this) {

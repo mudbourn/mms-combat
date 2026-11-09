@@ -34,9 +34,10 @@ public final class PvpEnchants {
     // The levels an enchant lookup should see: fair-play levels during a player-vs-player hit, the real ones otherwise.
     public static ItemEnchantments levels(ItemStack stack, ItemEnchantments real) {
         UUID[] fighters = FIGHTERS.get();
-        if (fighters == null || !FairPlayEnchants.overBudget(stack)) {
+        if (fighters == null) {
             return real;
         }
-        return LoadoutChoices.fairLevels(fighters, stack);
+        ItemEnchantments fair = FairPlayEnchants.overBudget(stack) ? LoadoutChoices.fairLevels(fighters, stack) : real;
+        return FairPlayEnchants.restrict(fair);
     }
 }
