@@ -6,7 +6,8 @@
     "AbstractArrowMixin",
     "EnchantmentHelperMixin",
     "LivingEntityHurtMixin",
-    "PlayerAttackMixin"
+    "PlayerAttackMixin",
+    "LivingEntityStabMixin"
   ],
   "injectors": {
     "defaultRequire": 1
