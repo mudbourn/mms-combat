@@ -11,7 +11,7 @@ import net.minecraft.sounds.SoundEvent;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobCategory;
 
-// The mod's registered content: the killstreak crate entity, which opens a vanilla chest menu, and the combat-state cues.
+// The mod's registered content: the killstreak crate entity and the combat-state cues.
 public final class MmsCombatRegistries {
 
     public static final EntityType<KillstreakCrateEntity> KILLSTREAK_CRATE = buildCrateType();

@@ -18,3 +18,4 @@ pluginManagement {
 // workflow both discover sibling deps by reading exactly this line.
 def siblingRoot = providers.gradleProperty('mmsSiblingRoot').getOrElse('..')
 includeBuild "$siblingRoot/mms-render-common"
+includeBuild "$siblingRoot/mms-weapons"

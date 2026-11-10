@@ -7,5 +7,7 @@
   "death.attack.mms_combat.succumb": "%1$s succumbed to their injuries",
   "death.attack.mms_combat.succumb.player": "%1$s succumbed to their injuries while fighting %2$s",
   "death.attack.mms_combat.succumb_fighting": "%1$s succumbed to their injuries while fighting %2$s",
-  "death.attack.mms_combat.succumb_fighting.item": "%1$s succumbed to their injuries while fighting %2$s using %3$s"
+  "death.attack.mms_combat.succumb_fighting.item": "%1$s succumbed to their injuries while fighting %2$s using %3$s",
+  "entity.mms_combat.thrown_sickle": "Thrown Sickle",
+  "item.mms_combat.training_dummy": "Training Dummy"
 }

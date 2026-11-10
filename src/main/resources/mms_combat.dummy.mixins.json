@@ -1,0 +1,13 @@
+{
+  "required": true,
+  "package": "info.mudbourn.mmscombat.dummy.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "ArmorStandDummyMixin",
+    "LivingEntityDummyMixin",
+    "TextDisplayAccessor"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

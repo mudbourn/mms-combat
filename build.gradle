@@ -46,23 +46,33 @@ dependencies {
     modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
     modImplementation "net.fabricmc.fabric-api:fabric-api:0.141.4+1.21.11"
     modImplementation "info.mudbourn:mms-render-common:${project.render_common_version}"
-    // Just Enough Guns is the source of the ranged killstreak rewards; local jar (no Maven),
-    // compiled against and copied into the dev run mods folders but not declared as a dependency of the mod.
-    modCompileOnly files("libs/justenoughguns-fabric-1.4.0.jar")
-    runtimeMods files("libs/justenoughguns-fabric-1.4.0.jar")
-    // GeckoLib is JEG's own required dependency, provided the same way.
-    modCompileOnly files("libs/geckolib-fabric-1.21.11-5.4.5.jar")
-    runtimeMods files("libs/geckolib-fabric-1.21.11-5.4.5.jar")
-    // Absolute Revive is the downed state the self-revive compat hooks; optional, same local jar wiring.
+    // The Training Dummy registers its head hitbox with mms-weapons headshots.
+    modImplementation "info.mudbourn:mms-weapons:${project.weapons_version}"
+    // Absolute Revive is the downed state the self-revive compat hooks; optional, compiled against and copied into the dev run mods folders.
     modCompileOnly files("libs/absolutrevive-v1.2.1b.jar")
     runtimeMods files("libs/absolutrevive-v1.2.1b.jar")
-    // Night Config core, which JEG's bundled toml jar needs but JEG does not ship.
-    localRuntime "com.electronwill.night-config:core:3.8.1"
-    // Client-only Mojang library that Bren logs through on the server tick; bundle it so a
-    // dedicated server has the class and does not crash, and add it to the dev server run's
-    // library set, which loom otherwise strips of client-only libraries.
-    include "com.mojang:text2speech:1.18.11"
-    minecraftServerRuntimeLibraries "com.mojang:text2speech:1.18.11"
+    // Mods whose weapon models, tags or ids this mod overrides or references, loaded at runtime only.
+    runtimeMods files(
+        "libs/aerialhell-0.7.7.9_fabric1.21.11.jar",
+        "libs/basicweapons-fabric-2.3.8+1.21.11.jar",
+        "libs/bountiful-fish-1.1.1.jar",
+        "libs/enderscape-fabric-2.1.0+mc1.21.11.jar",
+        "libs/expanded_weaponry-0.8.jar",
+        "libs/weaponsexpanded_1.21.11_1.9.3.1_fabric.jar"
+    )
+    // Required dependencies of Enderscape, Bountiful Fish, mms-arsenal and mms-weapons.
+    runtimeMods files(
+        "libs/trinkets-3.11.0-beta.2+1.21.11.jar",
+        "libs/cardinal-components-api-7.3.2.jar",
+        "libs/lithostitched-1.7.2-fabric-21.11.jar",
+        "libs/yet_another_config_lib_v3-3.8.2+1.21.11-fabric.jar",
+        "libs/better-combat-3.1.0+1.21.11-fabric.jar",
+        "libs/cloth-config-21.11.153-fabric.jar",
+        "libs/player-animation-library-1.1.10.jar",
+        "libs/MutantMonsters-v21.11.2-mc1.21.11-Fabric.jar",
+        "libs/PuzzlesLib-v21.11.13-mc1.21.11-Fabric.jar",
+        "libs/ForgeConfigAPIPort-v21.11.1-mc1.21.11-Fabric.jar"
+    )
 }
 
 tasks.withType(JavaCompile).configureEach {
@@ -97,32 +107,44 @@ jar {
     }
 }
 
-// Sibling mms-origins is a runtime-only mod loaded from run/mods, not a build dependency.
+// Sibling mods loaded from the run mods folders, not build dependencies. mms-weapons is a build dependency now, so it is not listed here.
 def mmsSiblingRoot = providers.gradleProperty("mmsSiblingRoot").getOrElse("..")
-def originsDir = file("$mmsSiblingRoot/mms-origins")
-def originsWrapper = System.getProperty("os.name").toLowerCase().contains("win") ? "gradlew.bat" : "./gradlew"
+def siblingWrapper = System.getProperty("os.name").toLowerCase().contains("win") ? "gradlew.bat" : "./gradlew"
+def siblingMods = ["mms-origins", "mms-arsenal"]
 
-// Rebuilds the sibling mod so the dev runs never load a hand-copied, stale jar.
-tasks.register("buildOriginsMod", Exec) {
-    onlyIf { originsDir.exists() }
-    workingDir originsDir
-    commandLine originsWrapper, "build"
-    inputs.dir(file("$originsDir/src"))
-    outputs.dir(file("$originsDir/build/libs"))
-}
+siblingMods.each { sibling ->
+    def siblingDir = file("$mmsSiblingRoot/$sibling")
+    def taskSuffix = sibling.split("-").collect { it.capitalize() }.join("")
 
-// Replaces the mms-origins jar under run/mods with the one just built.
-tasks.register("refreshOriginsMod", Copy) {
-    dependsOn "buildOriginsMod"
-    onlyIf { originsDir.exists() }
-    doFirst {
-        delete fileTree("run/mods") { include "mms-origins-*.jar" }
+    // Rebuilds the sibling mod so the dev runs never load a hand-copied, stale jar.
+    tasks.register("build${taskSuffix}", Exec) {
+        onlyIf { siblingDir.exists() }
+        workingDir siblingDir
+        commandLine siblingWrapper, "build"
+        inputs.dir(file("$siblingDir/src"))
+        outputs.dir(file("$siblingDir/build/libs"))
     }
-    from(file("$originsDir/build/libs")) {
-        include "mms-origins-*.jar"
-        exclude "*-sources.jar"
+
+    // Replaces the sibling jar in every dev run mods folder with the newest one just built.
+    tasks.register("refresh${taskSuffix}") {
+        dependsOn "build${taskSuffix}"
+        onlyIf { siblingDir.exists() }
+        doLast {
+            def newest = fileTree("$siblingDir/build/libs") {
+                include "${sibling}-*.jar"
+                exclude "*-sources.jar"
+            }.files.max { it.lastModified() }
+            ["run/mods", "run/alice/mods", "run/bob/mods"].each { dir ->
+                delete fileTree(dir) { include "${sibling}-*.jar" }
+                if (newest != null) {
+                    copy {
+                        from newest
+                        into file(dir)
+                    }
+                }
+            }
+        }
     }
-    into file("run/mods")
 }
 
 // Copies the required runtime mods into every dev run's mods folder.
@@ -138,9 +160,9 @@ tasks.register("syncRuntimeMods") {
     }
 }
 
-// Refresh the sibling mod before any dev run so edits there take effect without a manual copy.
-["runServer", "runClientAlice", "runClientBob"].each { runName ->
+// Refresh the sibling mods and runtime mods before any dev run so edits there take effect without a manual copy.
+["runClient", "runServer", "runClientAlice", "runClientBob"].each { runName ->
     tasks.named(runName) {
-        dependsOn "refreshOriginsMod", "syncRuntimeMods"
+        dependsOn siblingMods.collect { "refresh" + it.split("-").collect { part -> part.capitalize() }.join("") }, "syncRuntimeMods"
     }
 }

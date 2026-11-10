@@ -4,7 +4,6 @@ import info.mudbourn.mmscombat.MmsCombat;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
-import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.UUIDUtil;
 import net.minecraft.core.component.DataComponentType;
@@ -32,7 +31,6 @@ public final class KillstreakWeapons {
     private static final int STREAK_ITEM_SCYTHE = 3;
     private static final int STREAK_ITEM_HAMMER = 4;
     private static final int STREAK_ITEM_TRIDENT = 5;
-    private static final String JEG_MOD = "jeg";
 
     private static final Map<String, Function<ServerPlayer, List<ItemStack>>> REGISTRY = Map.of(
         "mjolnir", KillstreakWeapons::buildMjolnir,
@@ -139,32 +137,23 @@ public final class KillstreakWeapons {
         return List.of(trident);
     }
 
-    // Assault Rifle: a JEG gun loaded to 30 with a 60-round reserve, both owner-bound.
+    // Assault Rifle: the mms-arsenal assault rifle with a full magazine and spare ammo, all owner-bound.
     private static List<ItemStack> buildAssaultRifle(ServerPlayer owner) {
-        ItemStack gun = stack("jeg:assault_rifle", 1, STREAK_ITEM_GUN, owner);
-        if (gun.isEmpty()) {
-            return List.of();
+        List<ItemStack> kit = ArsenalGuns.build(ArsenalGuns.NAMESPACE + ":assault_rifle", owner);
+        if (!kit.isEmpty()) {
+            name(kit.get(0), "Assault Rifle", ChatFormatting.GOLD, false);
         }
-        name(gun, "Assault Rifle", ChatFormatting.GOLD, false);
-        setIntComponent(gun, "jeg:gun_ammo", 30);
-        ItemStack ammo = stack("jeg:rifle_ammo", 60, STREAK_ITEM_GUN, owner);
-        return ammo.isEmpty() ? List.of(gun) : List.of(gun, ammo);
+        return kit;
     }
 
-    // A gun with a full magazine plus spare ammo, from mms-arsenal or JEG by namespace, or empty when its mod or the gun is missing.
+    // An mms-arsenal gun with a full magazine plus spare ammo, or empty when the gun is missing.
     public static List<ItemStack> buildGun(String gunId, ServerPlayer owner) {
-        if (gunId.startsWith(ArsenalGuns.NAMESPACE + ":")) {
-            return ArsenalGuns.build(gunId, owner);
-        }
-        if (!FabricLoader.getInstance().isModLoaded(JEG_MOD)) {
-            return List.of();
-        }
-        return JegGuns.build(gunId, owner);
+        return ArsenalGuns.build(gunId, owner);
     }
 
-    // Every JEG gun id, or empty when JEG is not installed.
+    // Every mms-arsenal gun id with a loadout.
     public static List<Identifier> gunIds() {
-        return FabricLoader.getInstance().isModLoaded(JEG_MOD) ? JegGuns.ids() : List.of();
+        return ArsenalGuns.ids();
     }
 
     // Whether the stack is a killstreak crate gun, by its custom_data streak_item tag.
@@ -219,7 +208,7 @@ public final class KillstreakWeapons {
             .ifPresent(holder -> stack.enchant(holder, level));
     }
 
-    // Sets an integer-valued component (a JEG gun component, say) by id, skipping it when the type is absent.
+    // Sets an integer-valued component (an mms-arsenal ammo count, say) by id, skipping it when the type is absent.
     @SuppressWarnings("unchecked")
     static void setIntComponent(ItemStack stack, String componentId, int value) {
         Identifier id = Identifier.tryParse(componentId);

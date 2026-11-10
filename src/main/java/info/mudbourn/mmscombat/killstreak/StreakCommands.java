@@ -174,12 +174,8 @@ public final class StreakCommands {
 
     private static int listGuns(CommandContext<CommandSourceStack> ctx) {
         List<Identifier> guns = KillstreakWeapons.gunIds();
-        if (guns.isEmpty()) {
-            ctx.getSource().sendFailure(Component.literal("Just Enough Guns is not installed."));
-            return 0;
-        }
         String joined = String.join(", ", guns.stream().map(Identifier::toString).toList());
-        ctx.getSource().sendSuccess(() -> Component.literal("JEG guns (" + guns.size() + "): " + joined), false);
+        ctx.getSource().sendSuccess(() -> Component.literal("mms-arsenal guns (" + guns.size() + "): " + joined), false);
         return guns.size();
     }
 
@@ -189,7 +185,7 @@ public final class StreakCommands {
         String gun = IdentifierArgument.getId(ctx, "gun").toString();
         List<ItemStack> kit = KillstreakWeapons.buildGun(gun, player);
         if (kit.isEmpty()) {
-            ctx.getSource().sendFailure(Component.literal("No JEG gun " + gun + "."));
+            ctx.getSource().sendFailure(Component.literal("No mms-arsenal gun " + gun + "."));
             return 0;
         }
         for (ItemStack stack : kit) {
@@ -227,7 +223,7 @@ public final class StreakCommands {
         int kills = IntegerArgumentType.getInteger(ctx, "kills");
         String gun = IdentifierArgument.getId(ctx, "gun").toString();
         if (KillstreakWeapons.gunIds().stream().noneMatch(id -> id.toString().equals(gun))) {
-            ctx.getSource().sendFailure(Component.literal("No JEG gun " + gun + "."));
+            ctx.getSource().sendFailure(Component.literal("No mms-arsenal gun " + gun + "."));
             return 0;
         }
         StreakTier tier = findTier(kills);

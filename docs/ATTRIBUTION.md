@@ -1,12 +1,19 @@
 # Attribution
 
-Third-party work bundled in the built-in `weapon_models` resource pack
-(`src/main/resources/resourcepacks/weapon_models/`).
+## Training Dummy (Silentcat)
 
-- Basic Weapons pikes: geometry from Spear 3D by papaotchima, licensed
-  CC-BY-4.0. Tin and bronze textures derived from the Basic Weapons palettes.
-- Aerial Hell forgotten battle trident: geometry by Torrezx (Brezee trident),
-  recoloured to the Aerial Hell palette.
-- Bountiful Fish anchor: geometry from the Old Pirate Anchor model, recoloured
-  to the Bountiful Fish palette.
-- Bountiful Fish fossilized tuna: extruded from the Bountiful Fish sprite.
+The training dummy model and texture are from **"Training Dummy"** by
+**Silentcat** (<https://modrinth.com/datapack/training-dummy>, source at
+<https://github.com/Silentcat12/Training-Dummy>), licensed under
+**CC BY-SA 4.0** (<https://creativecommons.org/licenses/by-sa/4.0/>).
+
+Files:
+
+- `src/main/resources/assets/mms_combat/models/item/training_dummy.json`
+- `src/main/resources/assets/mms_combat/textures/item/training_dummy.png`
+
+Changes: the texture references in the model were renamed to the `mms_combat`
+namespace. The geometry and texture are otherwise unchanged.
+
+These two files, and any changes made to them, are licensed under CC BY-SA 4.0,
+not under this project's GPL-3.0 license.

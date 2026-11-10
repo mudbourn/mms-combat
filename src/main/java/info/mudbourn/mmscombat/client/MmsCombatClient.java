@@ -1,6 +1,5 @@
 package info.mudbourn.mmscombat.client;
 
-import info.mudbourn.mmscombat.MmsCombat;
 import info.mudbourn.mmscombat.client.compat.SelfReviveHud;
 import info.mudbourn.mmscombat.client.compat.SelfReviveKey;
 import info.mudbourn.mmscombat.client.hud.CombatHudRenderer;
@@ -16,13 +15,9 @@ import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements;
-import net.fabricmc.fabric.api.resource.v1.ResourceLoader;
-import net.fabricmc.fabric.api.resource.v1.pack.PackActivationType;
 import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.network.chat.Component;
-import net.minecraft.resources.Identifier;
 
-// Receives combat state from the server, draws the in-combat indicator over the hotbar, opens the fair-use loadout picker, and ships the 3D weapon model pack.
+// Receives combat state from the server, draws the in-combat indicator over the hotbar, and opens the fair-use loadout picker.
 public class MmsCombatClient implements ClientModInitializer {
 
     @Override
@@ -41,11 +36,6 @@ public class MmsCombatClient implements ClientModInitializer {
             CombatHudRenderer.ID,
             new CombatHudRenderer());
 
-        FabricLoader.getInstance().getModContainer(MmsCombat.MOD_ID).ifPresent(mod -> ResourceLoader.registerBuiltinPack(
-            Identifier.fromNamespaceAndPath(MmsCombat.MOD_ID, "weapon_models"),
-            mod,
-            Component.literal("MMS 3D Weapon Models"),
-            PackActivationType.DEFAULT_ENABLED));
         if (FabricLoader.getInstance().isModLoaded("absolutrevive")) {
             ClientPlayNetworking.registerGlobalReceiver(SelfReviveStatusPayload.TYPE, (payload, context) ->
                 context.client().execute(() -> SelfReviveHud.update(payload)));

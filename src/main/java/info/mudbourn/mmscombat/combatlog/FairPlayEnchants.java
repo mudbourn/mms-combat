@@ -70,7 +70,7 @@ public final class FairPlayEnchants {
 
     // Whether the stack breaks a rule and so needs levels dropped before it can fight.
     public static boolean overBudget(ItemStack stack) {
-        return stack.isEnchanted() && !fits(stack, stack.getEnchantments());
+        return stack.isEnchanted() && !fits(stack, restrict(stack.getEnchantments()));
     }
 
     // Whether a chosen set of levels is legal for the original stack.
@@ -81,7 +81,7 @@ public final class FairPlayEnchants {
         int status = 0;
         for (Holder<Enchantment> enchantment : chosen.keySet()) {
             int level = chosen.getLevel(enchantment);
-            if (level > base.getLevel(enchantment)) {
+            if (level > Math.min(base.getLevel(enchantment), limit(enchantment))) {
                 return false;
             }
             if (!budgeted(original, enchantment)) {
@@ -107,6 +107,9 @@ public final class FairPlayEnchants {
         int cap = budget(stack);
         Predicate<Holder<Enchantment>> budgeted = enchantment -> budgeted(stack, enchantment);
         EnchantmentHelper.updateEnchantments(stack, mutable -> {
+            for (Holder<Enchantment> enchantment : List.copyOf(mutable.keySet())) {
+                mutable.set(enchantment, Math.min(limit(enchantment), mutable.getLevel(enchantment)));
+            }
             while (sum(mutable, Kind.DAMAGE::matches) + sum(mutable, Kind.STATUS::matches) > paid) {
                 Kind kind = sum(mutable, Kind.DAMAGE::matches) > 0 ? Kind.DAMAGE : Kind.STATUS;
                 lowerHighest(mutable, kind::matches);
@@ -139,6 +142,11 @@ public final class FairPlayEnchants {
             }
         }
         return sum;
+    }
+
+    // Whether the enchant costs nothing toward the budget at the given level.
+    public static boolean free(Holder<Enchantment> enchantment, int level) {
+        return enchantment.is(PERFECT_PARRY) || cost(enchantment, level) == 0;
     }
 
     // Whether the enchant counts against the budget: curses, durability, disallowed and capped-free enchants never do.
@@ -193,7 +201,8 @@ public final class FairPlayEnchants {
         return mutable.toImmutable();
     }
 
-    private static int limit(Holder<Enchantment> enchantment) {
+    // Highest level the enchant may have in a player-vs-player fight.
+    public static int limit(Holder<Enchantment> enchantment) {
         if (disallowed(enchantment)) {
             return 0;
         }

@@ -4,6 +4,7 @@ import info.mudbourn.mmscombat.MmsCombat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
 
@@ -35,6 +36,13 @@ final class ArsenalGuns {
         "mms_arsenal:hypersonic_cannon", new Loadout(1, "minecraft:sculk_catalyst", 9));
 
     private ArsenalGuns() {
+    }
+
+    static List<Identifier> ids() {
+        return LOADOUTS.keySet().stream()
+            .map(Identifier::parse)
+            .sorted()
+            .toList();
     }
 
     static List<ItemStack> build(String gunId, ServerPlayer owner) {

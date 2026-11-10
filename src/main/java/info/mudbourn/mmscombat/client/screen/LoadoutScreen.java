@@ -91,7 +91,9 @@ public final class LoadoutScreen extends Screen {
             Holder<Enchantment> enchantment = rows.get(i);
             int y = top + 36 + i * ROW;
             int level = chosen.getLevel(enchantment);
-            String tag = FairPlayEnchants.isStatus(enchantment) ? " [status]"
+            String tag = FairPlayEnchants.disallowed(enchantment) ? " [off in PvP]"
+                : FairPlayEnchants.isStatus(enchantment) ? " [status]"
+                : FairPlayEnchants.free(enchantment, level) && level > 0 ? " [free]"
                 : FairPlayEnchants.isDamage(enchantment) ? " [damage]"
                 : FairPlayEnchants.isUpkeep(enchantment) ? " [free]" : "";
             Component name = level > 0
@@ -123,7 +125,9 @@ public final class LoadoutScreen extends Screen {
 
     private void step(Holder<Enchantment> enchantment, int delta) {
         ItemEnchantments.Mutable pick = picks.get(page);
-        int max = originals.get(page).getEnchantments().getLevel(enchantment);
+        int max = Math.min(
+            originals.get(page).getEnchantments().getLevel(enchantment),
+            FairPlayEnchants.limit(enchantment));
         pick.set(enchantment, Math.clamp(pick.getLevel(enchantment) + delta, 0, max));
         refresh();
     }

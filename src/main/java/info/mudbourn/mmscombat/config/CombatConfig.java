@@ -141,7 +141,7 @@ public final class CombatConfig {
         }
     }
 
-    // One weighted reward: a plain registry id (with count and companion items), a JEG gun id, or a killstreak weapon key, plus its relative draw weight.
+    // One weighted reward: a plain registry id (with count and companion items), an mms-arsenal gun id, or a killstreak weapon key, plus its relative draw weight.
     public static final class RewardEntry {
         public String item;
         public List<String> with = new ArrayList<>();
