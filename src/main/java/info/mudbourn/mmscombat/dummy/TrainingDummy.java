@@ -17,6 +17,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.StringTag;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
@@ -25,6 +26,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Display;
 import net.minecraft.world.entity.EntityDimensions;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.decoration.ArmorStand;
@@ -52,8 +54,8 @@ public final class TrainingDummy {
     // The total at which the readout is fully red.
     private static final float TALLY_FULL_RED = 100.0F;
     private static final double TALLY_HEIGHT = 2.4;
-    private static final double NUMBER_SPACING = 0.35;
-    private static final double TALLY_SPACING = 0.5;
+    private static final double NUMBER_SPACING = 0.5;
+    private static final double TALLY_SPACING = 0.65;
     private static final int NUMBER_PLACEMENT_TRIES = 16;
     // Heights above the dummy's feet that damage numbers spawn between: the lower torso up to mid-head.
     private static final double NUMBER_LOWEST = 0.9;
@@ -166,7 +168,7 @@ public final class TrainingDummy {
         }
     }
 
-    // Floats the number between the lower torso and mid-head on a plane in front of the dummy facing the attacker, at the first spot clear of other numbers and the total.
+    // Floats the number and its damage type between the lower torso and mid-head on a plane in front of the dummy facing the attacker, at the first spot clear of other numbers and the total.
     private static void showNumber(ServerLevel level, ArmorStand dummy, DamageSource source, float dealt) {
         Vec3 base = dummy.position();
         Vec3 attacker = source.getSourcePosition();
@@ -193,12 +195,49 @@ public final class TrainingDummy {
         Display.TextDisplay display = new Display.TextDisplay(EntityType.TEXT_DISPLAY, level);
         display.setPos(pos);
         ChatFormatting color = HeadshotBoxes.isHeadshot(dummy) ? ChatFormatting.GOLD : ChatFormatting.RED;
-        display.setText(Component.literal(String.format("-%.1f", dealt)).withStyle(color));
+        MutableComponent text = Component.literal(String.format("-%.1f", dealt)).withStyle(color);
+        text.append(Component.literal("\n").append(describe(source)));
+        display.setText(text);
         display.setBillboardConstraints(Display.BillboardConstraints.CENTER);
         display.addTag(NUMBER_TAG);
         clearBackground(display);
         numbers.put(display, NUMBER_TICKS);
         level.addFreshEntity(display);
+    }
+
+    // The damage type in plain words, read from its registry id, followed by who caused it and what carried it when those are known.
+    private static Component describe(DamageSource source) {
+        String type = source.typeHolder().unwrapKey()
+            .map(key -> key.identifier().getPath())
+            .orElse(source.getMsgId());
+        MutableComponent label = Component.literal(readable(type)).withStyle(ChatFormatting.GRAY);
+        Entity attacker = source.getEntity();
+        Entity direct = source.getDirectEntity();
+        if (attacker != null) {
+            String who = attacker.getName().getString();
+            if (direct != null && direct != attacker) {
+                who += " via " + direct.getName().getString();
+            }
+            label.append(" (" + who + ")");
+        } else if (direct != null) {
+            label.append(" (" + direct.getName().getString() + ")");
+        }
+        return label;
+    }
+
+    // A registry path such as beastfolk_slash as capitalized words.
+    private static String readable(String path) {
+        StringBuilder words = new StringBuilder();
+        for (String word : path.split("[_/]")) {
+            if (word.isEmpty()) {
+                continue;
+            }
+            if (words.length() > 0) {
+                words.append(' ');
+            }
+            words.append(Character.toUpperCase(word.charAt(0))).append(word.substring(1));
+        }
+        return words.toString();
     }
 
     // Distance from a spot to the nearest live damage number, or to the total less its wider margin.
