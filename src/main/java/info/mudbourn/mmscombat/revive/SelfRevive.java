@@ -33,10 +33,13 @@ import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.damagesource.DamageType;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.monster.Enemy;
+import net.minecraft.world.entity.player.Abilities;
 import net.minecraft.world.entity.player.Player;
 
 // Per-player self-revive progress and the per-life use budget.
 public final class SelfRevive {
+
+    public static final String DOWNED_TAG = "mms_combat_downed";
 
     private static final Map<UUID, Integer> PROGRESS = new HashMap<>();
     private static final Map<UUID, Integer> USES = new HashMap<>();
@@ -139,6 +142,23 @@ public final class SelfRevive {
         AbsolutReviveNetworking.sendDamageModelSync(player, model, false);
     }
 
+    private static void ground(ServerPlayer player, boolean downed) {
+        if (!downed) {
+            player.removeTag(DOWNED_TAG);
+            return;
+        }
+        player.addTag(DOWNED_TAG);
+        if (player.isFallFlying()) {
+            player.stopFallFlying();
+        }
+        Abilities abilities = player.getAbilities();
+        if (!player.isCreative() && !player.isSpectator() && (abilities.mayfly || abilities.flying)) {
+            abilities.mayfly = false;
+            abilities.flying = false;
+            player.onUpdateAbilities();
+        }
+    }
+
     private static void cancel(UUID id) {
         PROGRESS.remove(id);
         STRAINS.remove(id);
@@ -146,6 +166,7 @@ public final class SelfRevive {
 
     public static void tick(ServerPlayer player, PlayerDamageModel model) {
         UUID id = player.getUUID();
+        ground(player, model.isUnconscious());
         if (!model.isUnconscious() || !model.canBeRescued()) {
             cancel(id);
             return;
