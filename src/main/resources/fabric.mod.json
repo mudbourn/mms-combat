@@ -17,6 +17,7 @@
     "mms_combat.zone.mixins.json",
     "mms_combat.pvp.mixins.json",
     "mms_combat.revive.mixins.json",
+    "mms_combat.revive_client.mixins.json",
     "mms_combat.dummy.mixins.json"
   ],
   "accessWidener": "mms_combat.accesswidener",

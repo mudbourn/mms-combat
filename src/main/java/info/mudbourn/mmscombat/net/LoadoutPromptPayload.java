@@ -11,8 +11,8 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.enchantment.ItemEnchantments;
 
-// Server to client: the player's over-budget items and any saved pick for each, opening the screen where they pick what a logout body loses.
-public record LoadoutPromptPayload(List<ItemStack> items, List<Optional<ItemEnchantments>> saved) implements CustomPacketPayload {
+// Server to client: the player's over-budget items, any saved pick for each, and the keepInventory rule, opening the screen where they pick what a logout body loses.
+public record LoadoutPromptPayload(List<ItemStack> items, List<Optional<ItemEnchantments>> saved, boolean keepInventory) implements CustomPacketPayload {
 
     public static final Type<LoadoutPromptPayload> TYPE =
         new Type<>(Identifier.fromNamespaceAndPath(MmsCombat.MOD_ID, "loadout_prompt"));
@@ -22,6 +22,8 @@ public record LoadoutPromptPayload(List<ItemStack> items, List<Optional<ItemEnch
         LoadoutPromptPayload::items,
         ByteBufCodecs.optional(ItemEnchantments.STREAM_CODEC).apply(ByteBufCodecs.list(64)),
         LoadoutPromptPayload::saved,
+        ByteBufCodecs.BOOL,
+        LoadoutPromptPayload::keepInventory,
         LoadoutPromptPayload::new);
 
     @Override

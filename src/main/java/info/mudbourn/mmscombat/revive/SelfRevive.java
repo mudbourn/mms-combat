@@ -35,6 +35,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.entity.player.Abilities;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.gamerules.GameRules;
 
 // Per-player self-revive progress and the per-life use budget.
 public final class SelfRevive {
@@ -208,7 +209,11 @@ public final class SelfRevive {
     }
 
     private static void sendStatus(ServerPlayer player, boolean severe, int ticks, int duration) {
-        ServerPlayNetworking.send(player, new SelfReviveStatusPayload(severe, ticks, duration));
+        ServerPlayNetworking.send(player, new SelfReviveStatusPayload(
+            severe,
+            ticks,
+            duration,
+            player.level().getGameRules().get(GameRules.KEEP_INVENTORY)));
     }
 
     private static void showStatus(ServerPlayer player, String text, ChatFormatting color) {

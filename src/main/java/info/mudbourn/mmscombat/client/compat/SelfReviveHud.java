@@ -30,6 +30,11 @@ public final class SelfReviveHud {
         HudRenderCallback.EVENT.register(LATE, SelfReviveHud::render);
     }
 
+    // Whether the last status from the server said keepInventory is on.
+    public static boolean keepInventory() {
+        return status != null && status.keepInventory();
+    }
+
     public static void update(SelfReviveStatusPayload payload) {
         Minecraft client = Minecraft.getInstance();
         status = payload;

@@ -23,6 +23,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.enchantment.ItemEnchantments;
+import net.minecraft.world.level.gamerules.GameRules;
 
 // Per-player picks of which enchant levels a logout body loses, saved on the player and asked for again only when an item's enchants change.
 public final class LoadoutChoices {
@@ -88,7 +89,10 @@ public final class LoadoutChoices {
             return 0;
         }
         prompted.put(player.getUUID(), items);
-        ServerPlayNetworking.send(player, new LoadoutPromptPayload(items, saved));
+        ServerPlayNetworking.send(player, new LoadoutPromptPayload(
+            items,
+            saved,
+            player.level().getGameRules().get(GameRules.KEEP_INVENTORY)));
         return items.size();
     }
 

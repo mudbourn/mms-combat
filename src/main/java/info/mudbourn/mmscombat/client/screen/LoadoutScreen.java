@@ -28,13 +28,15 @@ public final class LoadoutScreen extends Screen {
     private final List<ItemStack> originals;
     private final List<Optional<ItemEnchantments>> saved;
     private final List<ItemEnchantments.Mutable> picks = new ArrayList<>();
+    private final boolean keepInventory;
     private int page;
     private Button confirm;
 
-    public LoadoutScreen(List<ItemStack> originals, List<Optional<ItemEnchantments>> saved) {
+    public LoadoutScreen(List<ItemStack> originals, List<Optional<ItemEnchantments>> saved, boolean keepInventory) {
         super(Component.literal("Combat Log Fair Use"));
         this.originals = originals;
         this.saved = saved;
+        this.keepInventory = keepInventory;
         loadPicks();
     }
 
@@ -78,7 +80,9 @@ public final class LoadoutScreen extends Screen {
         ItemEnchantments chosen = picks.get(page).toImmutable();
         graphics.drawCenteredString(font, title, center, top - 24, WHITE);
         graphics.drawCenteredString(font,
-            Component.literal("Pick what your logout body loses. Saved picks skip this screen; /loadout edits them."),
+            Component.literal(keepInventory
+                ? "Keep inventory is on, so you lose nothing. Pick what your logout body fights with; /loadout edits it."
+                : "Pick what your logout body loses. Saved picks skip this screen; /loadout edits them."),
             center, top - 12, GRAY);
         graphics.renderItem(original, center - 110, top);
         graphics.drawString(font, original.getHoverName(), center - 88, top + 4, WHITE);

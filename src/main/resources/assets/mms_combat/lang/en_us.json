@@ -4,6 +4,8 @@
   "subtitles.mms_combat.combat_end": "Combat ended",
   "key.mms_combat.self_revive": "Self-Revive",
   "key.category.mms_combat.revive": "Revive",
+  "mms_combat.revive.waiting_for_rescue": "Waiting for rescue...",
+  "mms_combat.revive.rescue_help": "A player can revive you (8s) or use a defibrillator (3s).",
   "death.attack.mms_combat.succumb": "%1$s succumbed to their injuries",
   "death.attack.mms_combat.succumb.player": "%1$s succumbed to their injuries while fighting %2$s",
   "death.attack.mms_combat.succumb_fighting": "%1$s succumbed to their injuries while fighting %2$s",

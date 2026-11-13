@@ -1,0 +1,12 @@
+{
+  "required": true,
+  "package": "info.mudbourn.mmscombat.client.compat.mixin",
+  "plugin": "info.mudbourn.mmscombat.compat.revive.ReviveMixinPlugin",
+  "compatibilityLevel": "JAVA_21",
+  "client": [
+    "DownedHintMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
