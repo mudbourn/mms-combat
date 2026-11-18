@@ -23,14 +23,15 @@ import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.util.Prediction;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Display;
 import net.minecraft.world.entity.EntityDimensions;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.decoration.ArmorStand;
-import net.minecraft.world.entity.monster.Slime;
+import net.minecraft.world.entity.monster.cubemob.Slime;
 import net.minecraft.world.item.ArmorStandItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -104,14 +105,14 @@ public final class TrainingDummy {
         ServerEntityEvents.ENTITY_LOAD.register((entity, level) -> {
             if (entity instanceof Display.TextDisplay display && isStaleReadout(display)) {
                 display.discard();
-            } else if (entity instanceof Slime slime && slime.getTags().contains(LEGACY_TAG)) {
+            } else if (entity instanceof Slime slime && slime.entityTags().contains(LEGACY_TAG)) {
                 slime.discard();
-            } else if (entity instanceof ArmorStand stand && stand.getTags().contains(LEGACY_TAG)) {
+            } else if (entity instanceof ArmorStand stand && stand.entityTags().contains(LEGACY_TAG)) {
                 level.getServer().execute(() -> convertLegacy(stand));
             }
         });
         ServerTickEvents.END_SERVER_TICK.register(TrainingDummy::tick);
-        HeadshotBoxes.register(EntityType.ARMOR_STAND, entity -> entity instanceof ArmorStand stand && isDummy(stand) ? HEAD : null);
+        HeadshotBoxes.register(EntityTypes.ARMOR_STAND, entity -> entity instanceof ArmorStand stand && isDummy(stand) ? HEAD : null);
     }
 
     // Whether an armor stand is a placed dummy, read from state the client also sees.
@@ -164,7 +165,7 @@ public final class TrainingDummy {
         }
         ItemStack stack = new ItemStack(ITEM);
         if (!player.getInventory().add(stack)) {
-            player.drop(stack, false);
+            player.drop(stack, false, Prediction.SERVER_ONLY);
         }
     }
 
@@ -192,7 +193,7 @@ public final class TrainingDummy {
             }
         }
 
-        Display.TextDisplay display = new Display.TextDisplay(EntityType.TEXT_DISPLAY, level);
+        Display.TextDisplay display = new Display.TextDisplay(EntityTypes.TEXT_DISPLAY, level);
         display.setPos(pos);
         ChatFormatting color = HeadshotBoxes.isHeadshot(dummy) ? ChatFormatting.GOLD : ChatFormatting.RED;
         MutableComponent text = Component.literal(String.format("-%.1f", dealt)).withStyle(color);
@@ -260,7 +261,7 @@ public final class TrainingDummy {
     private static void tally(ServerLevel level, ArmorStand dummy, float dealt) {
         Tally tally = tallies.get(dummy);
         if (tally == null || tally.display.isRemoved()) {
-            Display.TextDisplay display = new Display.TextDisplay(EntityType.TEXT_DISPLAY, level);
+            Display.TextDisplay display = new Display.TextDisplay(EntityTypes.TEXT_DISPLAY, level);
             display.setPos(dummy.position().add(0, TALLY_HEIGHT, 0));
             display.setBillboardConstraints(Display.BillboardConstraints.CENTER);
             display.addTag(TALLY_TAG);
@@ -288,10 +289,10 @@ public final class TrainingDummy {
     }
 
     private static boolean isStaleReadout(Display.TextDisplay display) {
-        if (display.getTags().contains(NUMBER_TAG)) {
+        if (display.entityTags().contains(NUMBER_TAG)) {
             return !numbers.containsKey(display);
         }
-        return display.getTags().contains(TALLY_TAG)
+        return display.entityTags().contains(TALLY_TAG)
             && tallies.values().stream().noneMatch(tally -> tally.display == display);
     }
 
@@ -346,7 +347,7 @@ public final class TrainingDummy {
         Item item = new ArmorStandItem(new Item.Properties()
             .setId(key)
             .stacksTo(16)
-            .component(DataComponents.ENTITY_DATA, TypedEntityData.of(EntityType.ARMOR_STAND, entityData())));
+            .component(DataComponents.ENTITY_DATA, TypedEntityData.of(EntityTypes.ARMOR_STAND, entityData())));
 
         return Registry.register(BuiltInRegistries.ITEM, key, item);
     }

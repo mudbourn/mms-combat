@@ -11,7 +11,7 @@ import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.entity.state.EntityRenderState;
 import net.minecraft.client.renderer.rendertype.RenderType;
 import net.minecraft.client.renderer.rendertype.RenderTypes;
-import net.minecraft.client.renderer.state.CameraRenderState;
+import net.minecraft.client.renderer.state.level.CameraRenderState;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
@@ -61,7 +61,7 @@ public class KillstreakCrateRenderer extends EntityRenderer<KillstreakCrateEntit
         float bob = Mth.sin(state.age * 0.08F) * 0.06F;
         poseStack.pushPose();
         poseStack.translate(0.0F, 0.4F + bob + state.animOffset, 0.0F);
-        poseStack.mulPose(Axis.YP.rotationDegrees(-state.yaw));
+        poseStack.rotate(Axis.YP.rotationDegrees(-state.yaw));
         RenderType crateType = RenderTypes.entityTranslucent(TEXTURE);
         collector.submitCustomGeometry(poseStack, crateType, (pose, consumer) ->
             crate.draw(pose, consumer, state.lightCoords, OverlayTexture.NO_OVERLAY, alpha | 0x00FFFFFF));

@@ -1,6 +1,5 @@
 package info.mudbourn.mmscombat.killstreak;
 
-import info.mudbourn.mmscombat.registry.MmsCombatRegistries;
 import java.util.UUID;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.syncher.EntityDataAccessor;
@@ -23,6 +22,7 @@ import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.InterpolationHandler;
+import net.minecraft.world.entity.LinearInterpolationHandler;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
@@ -71,8 +71,6 @@ public class KillstreakCrateEntity extends Entity implements MenuProvider {
         SynchedEntityData.defineId(KillstreakCrateEntity.class, EntityDataSerializers.BOOLEAN);
 
     private final SimpleContainer contents = new CrateContents(SLOTS);
-    // Smooths the server's per-tick follow across the client's frames so the crate glides instead of snapping between tracker updates.
-    private final InterpolationHandler interpolation = new InterpolationHandler(this);
     private UUID owner;
     private Vec3 lastOwnerPos;
     private int orphanAge;
@@ -111,7 +109,7 @@ public class KillstreakCrateEntity extends Entity implements MenuProvider {
     public void tick() {
         super.tick();
         if (this.level().isClientSide()) {
-            this.interpolation.interpolate();
+            this.interpolationHandler.interpolate();
             if (this.entityData.get(DESPAWNING)) {
                 this.clientDespawnAge++;
             }
@@ -232,12 +230,14 @@ public class KillstreakCrateEntity extends Entity implements MenuProvider {
     }
 
     @Override
-    public InteractionResult interact(Player player, InteractionHand hand) {
+    public InteractionResult interact(Player player, InteractionHand hand, Vec3 location) {
         if (this.level().isClientSide()) {
             return InteractionResult.SUCCESS;
         }
         if (this.owner != null && !this.owner.equals(player.getUUID())) {
-            player.displayClientMessage(Component.literal("This crate is not yours."), true);
+            if (player instanceof ServerPlayer serverPlayer) {
+                serverPlayer.sendSystemMessage(Component.literal("This crate is not yours."), true);
+            }
             return InteractionResult.FAIL;
         }
         player.openMenu(this);
@@ -276,10 +276,10 @@ public class KillstreakCrateEntity extends Entity implements MenuProvider {
         }
     }
 
-    // Routes the tracker's position updates through the interpolator on the client so movement is stepped over several frames.
+    // Steps the tracker's position updates over several client frames so the crate glides instead of snapping.
     @Override
-    public InterpolationHandler getInterpolation() {
-        return this.interpolation;
+    protected InterpolationHandler createInterpolationHandler() {
+        return LinearInterpolationHandler.create(this);
     }
 
     @Override

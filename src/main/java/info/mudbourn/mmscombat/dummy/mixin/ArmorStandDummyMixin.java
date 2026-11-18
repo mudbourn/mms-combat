@@ -26,15 +26,15 @@ public class ArmorStandDummyMixin {
     private void mmsCombat$absorbDummyHit(ServerLevel level, DamageSource source, float amount,
                                           CallbackInfoReturnable<Boolean> cir) {
         ArmorStand self = (ArmorStand) (Object) this;
-        if (self.getTags().contains(TrainingDummy.TAG) && !source.is(DamageTypeTags.BYPASSES_INVULNERABILITY)) {
+        if (self.entityTags().contains(TrainingDummy.TAG) && !source.is(DamageTypeTags.BYPASSES_INVULNERABILITY)) {
             TrainingDummy.hit(level, self, source, amount);
             cir.setReturnValue(false);
         }
     }
 
     // Lets a right click on a dummy fall through to the held item instead of the armor stand's slot swap.
-    @Inject(method = "interactAt", at = @At("HEAD"), cancellable = true)
-    private void mmsCombat$passDummyInteract(Player player, Vec3 location, InteractionHand hand,
+    @Inject(method = "interact", at = @At("HEAD"), cancellable = true)
+    private void mmsCombat$passDummyInteract(Player player, InteractionHand hand, Vec3 location,
                                              CallbackInfoReturnable<InteractionResult> cir) {
         if (TrainingDummy.isDummy((ArmorStand) (Object) this)) {
             cir.setReturnValue(InteractionResult.PASS);

@@ -1,5 +1,5 @@
 plugins {
-    id 'net.fabricmc.fabric-loom-remap' version '1.17.14'
+    id 'net.fabricmc.fabric-loom' version "${loom_version}"
 }
 
 version = project.mod_version
@@ -42,52 +42,40 @@ configurations {
 
 dependencies {
     minecraft "com.mojang:minecraft:${project.minecraft_version}"
-    mappings loom.officialMojangMappings()
-    modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
-    modImplementation "net.fabricmc.fabric-api:fabric-api:0.141.4+1.21.11"
-    modImplementation "info.mudbourn:mms-render-common:${project.render_common_version}"
+    implementation "net.fabricmc:fabric-loader:${project.loader_version}"
+    implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+    implementation "info.mudbourn:mms-render-common:${project.render_common_version}"
     // The Training Dummy registers its head hitbox with mms-weapons headshots.
-    modImplementation "info.mudbourn:mms-weapons:${project.weapons_version}"
-    // Absolute Revive is the downed state the self-revive compat hooks; optional, compiled against and copied into the dev run mods folders.
-    modCompileOnly files("libs/absolutrevive-v1.2.1b.jar")
-    runtimeMods files("libs/absolutrevive-v1.2.1b.jar")
+    implementation "info.mudbourn:mms-weapons:${project.weapons_version}"
     // Mods whose weapon models, tags or ids this mod overrides or references, loaded at runtime only.
     runtimeMods files(
-        "libs/aerialhell-0.7.7.9_fabric1.21.11.jar",
-        "libs/basicweapons-fabric-2.3.8+1.21.11.jar",
-        "libs/bountiful-fish-1.1.1.jar",
-        "libs/enderscape-fabric-2.1.0+mc1.21.11.jar",
-        "libs/expanded_weaponry-0.8.jar",
-        "libs/weaponsexpanded_1.21.11_1.9.3.1_fabric.jar"
+        "libs/26.3/aerialhell-0.7.9_fabric26.3.jar",
+        "libs/26.3/bountiful-fish-1.1.1.jar",
+        "libs/26.3/enderscape-fabric-3.0.6+mc26.3.jar",
+        "libs/26.3/weaponsexpanded_26.3_2.1.2.2_fabric.jar"
     )
     // Required dependencies of Enderscape, Bountiful Fish, mms-arsenal and mms-weapons.
     runtimeMods files(
-        "libs/trinkets-3.11.0-beta.2+1.21.11.jar",
-        "libs/cardinal-components-api-7.3.2.jar",
-        "libs/lithostitched-1.7.2-fabric-21.11.jar",
-        "libs/yet_another_config_lib_v3-3.8.2+1.21.11-fabric.jar",
-        "libs/better-combat-3.1.0+1.21.11-fabric.jar",
-        "libs/cloth-config-21.11.153-fabric.jar",
-        "libs/player-animation-library-1.1.10.jar",
-        "libs/MutantMonsters-v21.11.2-mc1.21.11-Fabric.jar",
-        "libs/PuzzlesLib-v21.11.13-mc1.21.11-Fabric.jar",
-        "libs/ForgeConfigAPIPort-v21.11.1-mc1.21.11-Fabric.jar"
+        "libs/26.3/cardinal-components-api-8.1.0.jar",
+        "libs/26.3/trinkets-4.2.1+26.3.jar",
+        "libs/26.3/lithostitched-2.0.6-fabric-26.3.jar",
+        "libs/26.3/yet_another_config_lib_v3-3.9.7+26.3-fabric.jar",
+        "libs/26.3/bettercombat-fabric-3.2.2+26.3.jar",
+        "libs/26.3/cloth-config-fabric-26.3.159.jar",
+        "libs/26.3/PlayerAnimationLibMerged-1.2.9+mc.26.3.jar",
+        "libs/26.3/mutantmonsters-v26.3.1-mc26.3.x+fabric.jar",
+        "libs/26.3/puzzleslib-v26.3.18-mc26.3.x+fabric.jar",
+        "libs/26.3/ForgeConfigAPIPort-v26.3.1-mc26.3.x-Fabric.jar"
     )
 }
 
 tasks.withType(JavaCompile).configureEach {
-    it.options.release = 21
+    it.options.release = 25
 }
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_21
-    targetCompatibility = JavaVersion.VERSION_21
-
-    // Pin a JDK 21 toolchain so compile and runClient fork on a supported
-    // HotSpot JVM instead of whatever launched Gradle. Matches the other mms mods.
-    toolchain {
-        languageVersion = JavaLanguageVersion.of(21)
-    }
+    sourceCompatibility = JavaVersion.VERSION_25
+    targetCompatibility = JavaVersion.VERSION_25
 
     withSourcesJar()
 }

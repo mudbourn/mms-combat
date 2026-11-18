@@ -5,7 +5,7 @@ import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElement;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
@@ -23,9 +23,9 @@ public final class CombatHudRenderer implements HudElement {
     private static final int STREAK_COLOR = 0xFFFFD54A;
 
     @Override
-    public void render(GuiGraphics context, DeltaTracker tickCounter) {
+    public void extractRenderState(GuiGraphicsExtractor context, DeltaTracker tickCounter) {
         Minecraft minecraft = Minecraft.getInstance();
-        if (minecraft.player == null || minecraft.options.hideGui) {
+        if (minecraft.player == null || minecraft.gui.hud.isHidden()) {
             return;
         }
         Font font = minecraft.font;
@@ -43,7 +43,7 @@ public final class CombatHudRenderer implements HudElement {
                 ? "Streak " + streak + " (" + decay + "s)"
                 : "Streak " + streak;
             int streakY = iconY - font.lineHeight - 2;
-            context.drawString(font, Component.literal(text), textX, streakY, STREAK_COLOR, true);
+            context.text(font, Component.literal(text), textX, streakY, STREAK_COLOR, true);
         }
 
         if (!CombatHudState.inCombat()) {
@@ -72,6 +72,6 @@ public final class CombatHudRenderer implements HudElement {
             label = Component.literal(CombatHudState.secondsLeft() + "s");
         }
         int textY = iconY + ICON_SIZE / 2 - font.lineHeight / 2;
-        context.drawString(font, label, textX, textY, TEXT_COLOR, true);
+        context.text(font, label, textX, textY, TEXT_COLOR, true);
     }
 }

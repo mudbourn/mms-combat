@@ -16,7 +16,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.Containers;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.Attributes;
@@ -48,7 +48,7 @@ public final class LogoutBodyManager {
     // Discards any tagged body that is not one of this session's live bodies, so a body orphaned by a restart vanishes the moment its chunk loads instead of lingering.
     public void discardIfOrphan(Entity entity) {
         if (entity instanceof Mannequin mannequin
-            && mannequin.getTags().contains(BODY_TAG)
+            && mannequin.entityTags().contains(BODY_TAG)
             && !liveBodyIds.contains(mannequin.getUUID())) {
             mannequin.discard();
         }
@@ -68,7 +68,7 @@ public final class LogoutBodyManager {
             }
         }
 
-        Mannequin body = new Mannequin(EntityType.MANNEQUIN, level);
+        Mannequin body = new Mannequin(EntityTypes.MANNEQUIN, level);
         float yaw = player.getYRot();
         body.snapTo(player.getX(), player.getY(), player.getZ(), yaw, player.getXRot());
         body.setYBodyRot(yaw);

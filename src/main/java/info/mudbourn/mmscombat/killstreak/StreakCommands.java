@@ -24,6 +24,7 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.util.Prediction;
 import net.minecraft.world.item.ItemStack;
 
 // The op-gated /mmscombat streaks subtree for editing tiers, their reward items, and the decay window at runtime.
@@ -191,7 +192,7 @@ public final class StreakCommands {
         for (ItemStack stack : kit) {
             Perishable.bind(stack, player);
             if (!player.addItem(stack)) {
-                player.drop(stack, false);
+                player.drop(stack, false, Prediction.SERVER_ONLY);
             }
         }
         ctx.getSource().sendSuccess(() -> Component.literal("Gave the perishable " + gun + " kit."), false);
@@ -211,7 +212,7 @@ public final class StreakCommands {
             ItemStack stack = new ItemStack(item.get());
             Perishable.bind(stack, target);
             if (!target.addItem(stack)) {
-                target.drop(stack, false);
+                target.drop(stack, false, Prediction.SERVER_ONLY);
             }
         }
         ctx.getSource().sendSuccess(

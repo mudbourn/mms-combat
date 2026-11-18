@@ -5,7 +5,6 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents;
@@ -54,16 +53,13 @@ public final class Perishable {
     );
 
     private static final ResourceKey<Item> TRAINING_DUMMY = ResourceKey.create(Registries.ITEM, Identifier.fromNamespaceAndPath("mms_arsenal", "training_dummy"));
-    private static final String REVIVE_MOD = "absolutrevive";
-    private static Method reviveModelLookup;
-    private static boolean reviveLookupFailed;
     private static final String TRASH_MOD = "trashslot";
     private static Method trashGet;
     private static Method trashSet;
     private static boolean trashLookupFailed;
     private static final String TRINKETS_MOD = "trinkets";
-    private static Method trinketsComponent;
-    private static Method trinketsInventory;
+    private static Method trinketsAttachment;
+    private static Method trinketsInventories;
     private static boolean trinketsLookupFailed;
 
     private Perishable() {
@@ -92,7 +88,7 @@ public final class Perishable {
 
     // A placed mms-arsenal training dummy, read from state the client also sees; it never takes items, so perishables may be used on it.
     private static boolean isTrainingDummy(ArmorStand stand) {
-        return stand.isInvisible() && stand.getItemBySlot(EquipmentSlot.HEAD).getItemHolder().is(TRAINING_DUMMY);
+        return stand.isInvisible() && stand.getItemBySlot(EquipmentSlot.HEAD).typeHolder().is(TRAINING_DUMMY);
     }
 
     // Binds a stack to its owner and tags it so the holder can see it will not last.
@@ -164,24 +160,22 @@ public final class Perishable {
             return;
         }
         try {
-            if (trinketsComponent == null) {
-                trinketsComponent = Class.forName("dev.emi.trinkets.api.TrinketsApi")
-                    .getMethod("getTrinketComponent", LivingEntity.class);
-                trinketsInventory = Class.forName("dev.emi.trinkets.api.TrinketComponent")
-                    .getMethod("getInventory");
+            if (trinketsAttachment == null) {
+                trinketsAttachment = Class.forName("eu.pb4.trinkets.api.TrinketsApi")
+                    .getMethod("getAttachment", LivingEntity.class);
+                trinketsInventories = Class.forName("eu.pb4.trinkets.api.TrinketAttachment")
+                    .getMethod("getInventories");
             }
-            Optional<?> component = (Optional<?>) trinketsComponent.invoke(null, player);
-            if (component.isEmpty()) {
+            Object attachment = trinketsAttachment.invoke(null, player);
+            if (attachment == null) {
                 return;
             }
-            Map<?, ?> groups = (Map<?, ?>) trinketsInventory.invoke(component.get());
-            for (Object group : groups.values()) {
-                for (Object slots : ((Map<?, ?>) group).values()) {
-                    Container container = (Container) slots;
-                    for (int i = 0; i < container.getContainerSize(); i++) {
-                        if (isPerishable(container.getItem(i))) {
-                            container.setItem(i, ItemStack.EMPTY);
-                        }
+            Map<?, ?> slots = (Map<?, ?>) trinketsInventories.invoke(attachment);
+            for (Object entry : slots.values()) {
+                Container container = (Container) entry;
+                for (int i = 0; i < container.getContainerSize(); i++) {
+                    if (isPerishable(container.getItem(i))) {
+                        container.setItem(i, ItemStack.EMPTY);
                     }
                 }
             }
@@ -193,10 +187,6 @@ public final class Perishable {
 
     private static void tick(MinecraftServer server) {
         for (ServerPlayer player : server.getPlayerList().getPlayers()) {
-            if (isDowned(player)) {
-                purge(player);
-                continue;
-            }
             guardInventory(player);
             guardOpenContainer(player);
         }
@@ -233,54 +223,15 @@ public final class Perishable {
 
     private static void stripBundle(ItemStack stack) {
         BundleContents contents = stack.get(DataComponents.BUNDLE_CONTENTS);
-        if (contents == null || contents.itemCopyStream().noneMatch(Perishable::isPerishable)) {
+        if (contents == null || contents.itemCopies().noneMatch(Perishable::isPerishable)) {
             return;
         }
-        BundleContents.Mutable kept = new BundleContents.Mutable(BundleContents.EMPTY);
-        for (ItemStack inner : contents.itemsCopy()) {
+        BundleContents.Mutable kept = new BundleContents.Mutable();
+        for (ItemStack inner : contents.itemCopies().toList()) {
             if (!isPerishable(inner)) {
                 kept.tryInsert(inner);
             }
         }
         stack.set(DataComponents.BUNDLE_CONTENTS, kept.toImmutable());
-    }
-
-    // Whether Absolute Revive has the player downed: unconscious or in critical condition.
-    private static boolean isDowned(Player player) {
-        Method lookup = reviveModelLookup();
-        if (lookup == null) {
-            return false;
-        }
-        try {
-            Optional<?> model = (Optional<?>) lookup.invoke(null, player);
-            if (model.isEmpty()) {
-                return false;
-            }
-            Object value = model.get();
-            return (boolean) value.getClass().getMethod("isUnconscious").invoke(value)
-                || (boolean) value.getClass().getMethod("isCriticalConditionActive").invoke(value);
-        } catch (ReflectiveOperationException | ClassCastException e) {
-            MmsCombat.LOG.error("Absolute Revive downed check failed; disabling it", e);
-            reviveLookupFailed = true;
-            return false;
-        }
-    }
-
-    private static Method reviveModelLookup() {
-        if (reviveModelLookup != null || reviveLookupFailed) {
-            return reviveModelLookup;
-        }
-        if (!FabricLoader.getInstance().isModLoaded(REVIVE_MOD)) {
-            reviveLookupFailed = true;
-            return null;
-        }
-        try {
-            reviveModelLookup = Class.forName("goetic.mods.absolutrevive.common.util.CommonUtils")
-                .getMethod("getOptionalDamageModel", Player.class);
-        } catch (ReflectiveOperationException e) {
-            MmsCombat.LOG.error("Absolute Revive is loaded but its damage model lookup was not found", e);
-            reviveLookupFailed = true;
-        }
-        return reviveModelLookup;
     }
 }

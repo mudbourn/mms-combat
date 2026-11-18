@@ -151,7 +151,7 @@ public final class LoadoutChoices {
         chosen.put(player.getUUID(), List.copyOf(picks));
         player.setAttached(PICKS, List.copyOf(picks));
         if (rejected > 0) {
-            player.displayClientMessage(Component.literal(
+            player.sendSystemMessage(Component.literal(
                 rejected + " pick(s) broke the fair-use rules and will be nerfed automatically."), false);
         }
     }

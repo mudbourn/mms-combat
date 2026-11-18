@@ -8,6 +8,7 @@ import info.mudbourn.mmscombat.zone.ZoneStore;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
@@ -15,7 +16,6 @@ import net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
-import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.protocol.game.ClientboundSoundPacket;
@@ -27,6 +27,7 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.scores.PlayerTeam;
 import net.minecraft.world.scores.Scoreboard;
+import net.minecraft.world.scores.TeamColor;
 
 // The combat flag and its per-player timer: damage and zone entry stamp a deadline, a tick handler counts it down and drives the HUD, and disconnecting while flagged leaves a logout body.
 public final class CombatManager {
@@ -82,11 +83,11 @@ public final class CombatManager {
     // Whether a player-on-player hit may land: both sides must have PvP on, and a landed hit flags both.
     private boolean allowPvp(ServerPlayer victim, ServerPlayer attacker) {
         if (!isPvpEnabled(attacker)) {
-            attacker.displayClientMessage(Component.literal("Your PvP is off. Use /combatlog on to fight."), true);
+            attacker.sendSystemMessage(Component.literal("Your PvP is off. Use /combatlog on to fight."), true);
             return false;
         }
         if (!isPvpEnabled(victim)) {
-            attacker.displayClientMessage(Component.literal("That player has PvP off."), true);
+            attacker.sendSystemMessage(Component.literal("That player has PvP off."), true);
             return false;
         }
         flag(victim);
@@ -235,7 +236,7 @@ public final class CombatManager {
             return;
         }
         setPersistentCombat(player, true);
-        player.displayClientMessage(Component.literal("You entered a combat zone. PvP is on."), false);
+        player.sendSystemMessage(Component.literal("You entered a combat zone. PvP is on."), false);
     }
 
     // Leaving a combat zone turns the PvP toggle off and leaves the combat timer counting down from the exit.
@@ -244,7 +245,7 @@ public final class CombatManager {
             return;
         }
         setPersistentCombat(player, false);
-        player.displayClientMessage(Component.literal("PvP has been disabled."), false);
+        player.sendSystemMessage(Component.literal("PvP has been disabled."), false);
     }
 
     // Standing in a flagCombatOnEnter zone flags or refreshes combat, even for a player not already fighting.
@@ -311,7 +312,7 @@ public final class CombatManager {
         PlayerTeam team = scoreboard.getPlayerTeam(COMBAT_TEAM);
         if (team == null) {
             team = scoreboard.addPlayerTeam(COMBAT_TEAM);
-            team.setColor(ChatFormatting.RED);
+            team.setColor(Optional.of(TeamColor.RED));
             team.setAllowFriendlyFire(true);
             team.setSeeFriendlyInvisibles(false);
         }

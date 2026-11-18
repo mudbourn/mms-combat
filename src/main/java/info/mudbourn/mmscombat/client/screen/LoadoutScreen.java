@@ -6,7 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.core.Holder;
@@ -72,24 +72,24 @@ public final class LoadoutScreen extends Screen {
     }
 
     @Override
-    public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        super.render(graphics, mouseX, mouseY, partialTick);
+    public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
+        super.extractRenderState(graphics, mouseX, mouseY, partialTick);
         int center = width / 2;
         int top = height / 2 - 70;
         ItemStack original = originals.get(page);
         ItemEnchantments chosen = picks.get(page).toImmutable();
-        graphics.drawCenteredString(font, title, center, top - 24, WHITE);
-        graphics.drawCenteredString(font,
+        graphics.centeredText(font, title, center, top - 24, WHITE);
+        graphics.centeredText(font,
             Component.literal(keepInventory
                 ? "Keep inventory is on, so you lose nothing. Pick what your logout body fights with; /loadout edits it."
                 : "Pick what your logout body loses. Saved picks skip this screen; /loadout edits them."),
             center, top - 12, GRAY);
-        graphics.renderItem(original, center - 110, top);
-        graphics.drawString(font, original.getHoverName(), center - 88, top + 4, WHITE);
-        graphics.drawString(font, (page + 1) + "/" + originals.size(), center + 84, top + 4, GRAY);
+        graphics.item(original, center - 110, top);
+        graphics.text(font, original.getHoverName(), center - 88, top + 4, WHITE);
+        graphics.text(font, (page + 1) + "/" + originals.size(), center + 84, top + 4, GRAY);
         int cap = FairPlayEnchants.budget(original);
         String budget = cap == FairPlayEnchants.UNCAPPED ? "no cap" : FairPlayEnchants.budgetedLevels(original, chosen) + "/" + cap + " EL";
-        graphics.drawString(font, budget, center - 88, top + 16, GRAY);
+        graphics.text(font, budget, center - 88, top + 16, GRAY);
         List<Holder<Enchantment>> rows = rows();
         for (int i = 0; i < rows.size(); i++) {
             Holder<Enchantment> enchantment = rows.get(i);
@@ -103,11 +103,11 @@ public final class LoadoutScreen extends Screen {
             Component name = level > 0
                 ? Enchantment.getFullname(enchantment, level)
                 : Component.literal("off: ").append(enchantment.value().description());
-            graphics.drawString(font, name.getString() + tag, center - 110, y, level > 0 ? WHITE : GRAY);
+            graphics.text(font, name.getString() + tag, center - 110, y, level > 0 ? WHITE : GRAY);
         }
         boolean legal = FairPlayEnchants.fits(original, chosen);
         int bottom = top + 40 + Math.max(rows.size(), 3) * ROW;
-        graphics.drawCenteredString(font,
+        graphics.centeredText(font,
             legal ? "Legal" : "Over budget, or status levels not paid with damage levels",
             center, bottom - 12, legal ? GREEN : RED);
     }
