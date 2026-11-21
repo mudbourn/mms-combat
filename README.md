@@ -16,8 +16,7 @@ Four features, one mod:
    streak tier and hands over a JEG gun or a bespoke ability weapon.
 
 See [docs/DESIGN.md](docs/DESIGN.md) for the architecture and the datapack
-pitfalls this deliberately avoids. This mod supersedes the killstreak half of
-`ks-support` (never deployed).
+pitfalls this deliberately avoids.
 
 Build: `./gradlew build`. Release via the shared engine (see
 `mms-pack/.github/workflows/mod-release.yml`).

@@ -22,10 +22,10 @@ import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.item.component.ItemLore;
 import net.minecraft.world.item.enchantment.Enchantment;
 
-// Builds the ks-support killstreak weapons as fully-componented, owner-bound stacks in Java, replacing the datapack give functions.
+// Builds the killstreak weapons as fully-componented, owner-bound stacks in Java, replacing the datapack give functions.
 public final class KillstreakWeapons {
 
-    // ks-support tier ids stamped into custom_data.streak_item, kept so the existing contract-purge datapack still recognises these stacks.
+    // Tier ids stamped into custom_data.streak_item, kept so the existing contract-purge datapack still recognises these stacks.
     static final int STREAK_ITEM_GUN = 1;
     private static final int STREAK_ITEM_MJOLNIR = 2;
     private static final int STREAK_ITEM_SCYTHE = 3;

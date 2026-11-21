@@ -30,9 +30,8 @@ the failure modes that made the killstreak and combat-log **datapacks** painful.
 
 ## Why a mod, not a datapack
 
-The two references we are replacing — the third-party `ly-combat-log` datapack
-and the in-house `ks-support` killstreak datapack — share one root cause of
-bugginess: everything they do is expressed as `execute as @a` scoreboard loops
+The datapack approach this replaces, such as the third-party `ly-combat-log`
+datapack, has one root cause of bugginess: everything they do is expressed as `execute as @a` scoreboard loops
 and advancement grant/revoke dances, run every tick, with state smeared across
 dozens of `.mcfunction` files and scoreboard objectives. That model has no real
 event hooks, no typed state, no atomic transitions, and no way to react to a
@@ -205,7 +204,7 @@ drops it rather than leaving an orphan.
 The crate is rendered from the ported `weapon_crate` Bedrock geo through the new
 `GeoModel` tool in `mms-render-common` (the non-humanoid companion to the
 existing `HumanoidGeoModel`), wired in as a composite build. This is the concrete
-improvement over the `ks-support` datapack's item-recall / armor-stand chase,
+improvement over a datapack-style item-recall / armor-stand chase,
 which used teleport loops and tag juggling that desynced: one owned entity with
 a lifetime and an owner check removes the whole class of "whose chest is this /
 it teleported into a wall" bugs.
@@ -284,5 +283,3 @@ Standing tasks that stay in the plan:
   configured.)
 - **Follower chest rendering** — display-entity + client renderer vs. a real
   entity type; leaning display-entity for zero AI cost.
-- **`ks-support` retirement** — strip its killstreak datapack when this ships so
-  two systems never both count kills.
