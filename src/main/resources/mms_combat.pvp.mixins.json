@@ -7,7 +7,8 @@
     "EnchantmentHelperMixin",
     "LivingEntityHurtMixin",
     "PlayerAttackMixin",
-    "LivingEntityStabMixin"
+    "LivingEntityStabMixin",
+    "KillstreakArmorBypassMixin"
   ],
   "injectors": {
     "defaultRequire": 1
