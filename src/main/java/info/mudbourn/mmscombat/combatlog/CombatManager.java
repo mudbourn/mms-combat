@@ -42,6 +42,13 @@ public final class CombatManager {
     private final Set<UUID> persistentCombat = new HashSet<>();
     private final LogoutBodyManager bodies = new LogoutBodyManager();
     private final Set<UUID> inZoneLastTick = new HashSet<>();
+    // Zone notices: a crossing within five seconds of a notice is held back until the player has stayed on one side
+    // of the border for ten seconds, so walking along an edge shows one message instead of a stream.
+    private static final int NOTICE_BURST_TICKS = 100;
+    private static final int NOTICE_SETTLE_TICKS = 200;
+    private final Map<UUID, Boolean> noticeShown = new HashMap<>();
+    private final Map<UUID, Integer> noticeShownAt = new HashMap<>();
+    private final Map<UUID, Integer> noticeHeldSince = new HashMap<>();
     private final List<Predicate<ServerPlayer>> pvpOverrides = new ArrayList<>();
     private final List<Predicate<ServerPlayer>> logoutBodyVetoes = new ArrayList<>();
 
@@ -154,7 +161,7 @@ public final class CombatManager {
             LoadoutChoices.prompt(player);
         }
         syncCombatTeam(player);
-        sendState(player, true, combatSeconds(player), inFlaggingZone(player));
+        sendState(player, true, combatSeconds(player), hudZone(player, inFlaggingZone(player)));
     }
 
     public boolean isFlagged(ServerPlayer player) {
@@ -180,7 +187,7 @@ public final class CombatManager {
         }
         forgetSentState(player.getUUID());
         syncCombatTeam(player);
-        sendState(player, isFlagged(player), combatSeconds(player), inFlaggingZone(player));
+        sendState(player, isFlagged(player), combatSeconds(player), hudZone(player, inFlaggingZone(player)));
     }
 
     // The countdown to show: the persistent hold takes priority over any timer, then the ticking deadline, then nothing.
@@ -246,6 +253,11 @@ public final class CombatManager {
         if (!inZoneLastTick.isEmpty()) {
             inZoneLastTick.removeIf(id -> server.getPlayerList().getPlayer(id) == null);
         }
+        if (!noticeShown.isEmpty() || !noticeHeldSince.isEmpty()) {
+            noticeShown.keySet().removeIf(id -> server.getPlayerList().getPlayer(id) == null);
+            noticeShownAt.keySet().removeIf(id -> server.getPlayerList().getPlayer(id) == null);
+            noticeHeldSince.keySet().removeIf(id -> server.getPlayerList().getPlayer(id) == null);
+        }
         for (ServerPlayer player : server.getPlayerList().getPlayers()) {
             boolean inZone = inFlaggingZone(player);
             if (inZone && inZoneLastTick.add(player.getUUID())) {
@@ -253,6 +265,7 @@ public final class CombatManager {
             } else if (!inZone && inZoneLastTick.remove(player.getUUID())) {
                 exitZone(player);
             }
+            settleZoneNotice(player, server.getTickCount());
             if (inZone) {
                 holdInZone(player);
             } else {
@@ -268,7 +281,7 @@ public final class CombatManager {
             return;
         }
         setPersistentCombat(player, true);
-        player.sendSystemMessage(Component.literal("You entered a combat zone. PvP is on."), false);
+        zoneNotice(player, true);
     }
 
     // Leaving a combat zone turns the PvP toggle off and leaves the combat timer counting down from the exit.
@@ -277,7 +290,39 @@ public final class CombatManager {
             return;
         }
         setPersistentCombat(player, false);
-        player.sendSystemMessage(Component.literal("PvP has been disabled."), false);
+        zoneNotice(player, false);
+    }
+
+    // Shows a zone notice now, or holds it back when it follows another within the burst window.
+    private void zoneNotice(ServerPlayer player, boolean inZone) {
+        UUID id = player.getUUID();
+        int now = player.level().getServer().getTickCount();
+        Integer shownAt = noticeShownAt.get(id);
+        if (noticeHeldSince.containsKey(id) || shownAt != null && now - shownAt < NOTICE_BURST_TICKS) {
+            noticeHeldSince.put(id, now);
+        } else {
+            showZoneNotice(player, inZone, now);
+        }
+    }
+
+    // Once a held-back player has stayed put long enough, shows where they ended up if it differs from the last notice.
+    private void settleZoneNotice(ServerPlayer player, int now) {
+        UUID id = player.getUUID();
+        Integer heldSince = noticeHeldSince.get(id);
+        if (heldSince == null || now - heldSince < NOTICE_SETTLE_TICKS) {
+            return;
+        }
+        noticeHeldSince.remove(id);
+        boolean inZone = persistentCombat.contains(id);
+        if (!Boolean.valueOf(inZone).equals(noticeShown.get(id))) {
+            showZoneNotice(player, inZone, now);
+        }
+    }
+
+    private void showZoneNotice(ServerPlayer player, boolean inZone, int now) {
+        noticeShown.put(player.getUUID(), inZone);
+        noticeShownAt.put(player.getUUID(), now);
+        player.sendSystemMessage(Component.literal(inZone ? "You entered a combat zone. PvP is on." : "PvP has been disabled."), false);
     }
 
     // Standing in a flagCombatOnEnter zone flags or refreshes combat, even for a player not already fighting.
@@ -310,7 +355,15 @@ public final class CombatManager {
     }
 
     // Pushes an update only when the displayed content changes: the combat flag, its countdown, the zone hold, the streak, or the streak's decay countdown.
-    private void refreshHud(ServerPlayer player, boolean inZone) {
+    // The zone state the HUD shows: while a zone notice is held back, the HUD keeps showing what the last notice said,
+    // so the indicator settles at the same moment as the chat notice instead of flickering along a border.
+    private boolean hudZone(ServerPlayer player, boolean inZone) {
+        Boolean shown = noticeShown.get(player.getUUID());
+        return noticeHeldSince.containsKey(player.getUUID()) && shown != null ? shown : inZone;
+    }
+
+    private void refreshHud(ServerPlayer player, boolean actualZone) {
+        boolean inZone = hudZone(player, actualZone);
         syncCombatTeam(player);
         boolean inCombat = isFlagged(player);
         int seconds = combatSeconds(player);
