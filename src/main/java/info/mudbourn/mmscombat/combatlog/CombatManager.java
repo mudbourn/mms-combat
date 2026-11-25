@@ -51,6 +51,9 @@ public final class CombatManager {
     private final Map<UUID, Integer> noticeHeldSince = new HashMap<>();
     private final List<Predicate<ServerPlayer>> pvpOverrides = new ArrayList<>();
     private final List<Predicate<ServerPlayer>> logoutBodyVetoes = new ArrayList<>();
+    private final List<Predicate<ServerPlayer>> quietCrossings = new ArrayList<>();
+    private final Set<UUID> quietExpiry = new HashSet<>();
+    private boolean cuesMuted;
 
     // Scoreboard team whose only job is to paint a flagged player's nametag red.
     private static final String COMBAT_TEAM = "mms_combat";
@@ -130,6 +133,15 @@ public final class CombatManager {
         logoutBodyVetoes.add(veto);
     }
 
+    /**
+     * Adds a check that silences the combat cues of a zone crossing while it
+     * returns true: the start cue on entry and the end cue when the exit timer
+     * runs out. Call it once at mod init.
+     */
+    public void addQuietCrossing(Predicate<ServerPlayer> quiet) {
+        quietCrossings.add(quiet);
+    }
+
     private static boolean anyMatch(List<Predicate<ServerPlayer>> checks, ServerPlayer player) {
         for (Predicate<ServerPlayer> check : checks) {
             if (check.test(player)) {
@@ -156,6 +168,7 @@ public final class CombatManager {
         boolean wasFlagged = isFlagged(player);
         long deadline = player.level().getGameTime() + CombatConfig.get().combatTicks;
         deadlines.put(player.getUUID(), deadline);
+        quietExpiry.remove(player.getUUID());
         if (!wasFlagged) {
             playCombatSound(player, MmsCombatRegistries.COMBAT_START);
             LoadoutChoices.prompt(player);
@@ -228,6 +241,7 @@ public final class CombatManager {
     private void onDisconnect(ServerPlayer player) {
         boolean flagged = isFlagged(player);
         inZoneLastTick.remove(player.getUUID());
+        quietExpiry.remove(player.getUUID());
         Long deadline = deadlines.remove(player.getUUID());
         forgetSentState(player.getUUID());
         if (!flagged || anyMatch(logoutBodyVetoes, player)) {
@@ -280,7 +294,12 @@ public final class CombatManager {
         if (persistentCombat.contains(player.getUUID())) {
             return;
         }
-        setPersistentCombat(player, true);
+        cuesMuted = anyMatch(quietCrossings, player);
+        try {
+            setPersistentCombat(player, true);
+        } finally {
+            cuesMuted = false;
+        }
         zoneNotice(player, true);
     }
 
@@ -290,6 +309,9 @@ public final class CombatManager {
             return;
         }
         setPersistentCombat(player, false);
+        if (anyMatch(quietCrossings, player)) {
+            quietExpiry.add(player.getUUID());
+        }
         zoneNotice(player, false);
     }
 
@@ -341,9 +363,12 @@ public final class CombatManager {
             return;
         }
         deadlines.remove(player.getUUID());
+        boolean quiet = quietExpiry.remove(player.getUUID());
         if (!isFlagged(player)) {
             forgetSentState(player.getUUID());
-            playCombatSound(player, MmsCombatRegistries.COMBAT_END);
+            if (!quiet) {
+                playCombatSound(player, MmsCombatRegistries.COMBAT_END);
+            }
             sendState(player, false, 0, false);
         }
     }
@@ -413,6 +438,9 @@ public final class CombatManager {
 
     // Plays a combat-state cue to just this player, at their own position so they always hear it.
     private void playCombatSound(ServerPlayer player, SoundEvent sound) {
+        if (cuesMuted) {
+            return;
+        }
         player.connection.send(new ClientboundSoundPacket(
             BuiltInRegistries.SOUND_EVENT.wrapAsHolder(sound),
             SoundSource.PLAYERS,
