@@ -8,7 +8,7 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.level.Level;
 
-// One combat zone: a named region in a single dimension plus the flags that govern what happens inside it. The footprint is an axis-aligned box, or an extruded polygon when edge points are set.
+// One combat zone: a named region in a single dimension plus the flags that govern what happens inside it. The footprint is an axis-aligned box, an extruded polygon when edge points are set, or the whole dimension for a band.
 public final class Zone {
 
     public String name;
@@ -20,6 +20,7 @@ public final class Zone {
     public int maxY;
     public int maxZ;
     public List<int[]> polygon = new ArrayList<>();
+    public boolean band;
     public boolean flagCombatOnEnter = true;
     public boolean suppressNaturalSpawns = true;
     public boolean blockExplosionShield = false;
@@ -45,6 +46,13 @@ public final class Zone {
         this.dimension = dimension;
         this.minY = Math.min(minY, maxY);
         this.maxY = Math.max(minY, maxY);
+    }
+
+    // A zone covering every column of the dimension between two heights.
+    public static Zone band(String name, String dimension, int minY, int maxY) {
+        Zone zone = new Zone(name, dimension, minY, maxY);
+        zone.band = true;
+        return zone;
     }
 
     // Whether edge points define this zone's footprint instead of the box.
@@ -105,7 +113,13 @@ public final class Zone {
 
     // Whether this position sits within the zone footprint at or below its ceiling, so the floor and terrain beneath the zone are shielded too.
     public boolean shieldsColumn(ResourceKey<Level> dim, int x, int y, int z) {
-        if (y > maxY || x < minX || x > maxX || z < minZ || z > maxZ || !inDimension(dim)) {
+        if (y > maxY || !inDimension(dim)) {
+            return false;
+        }
+        if (band) {
+            return true;
+        }
+        if (x < minX || x > maxX || z < minZ || z > maxZ) {
             return false;
         }
         return !isPolygon() || containsColumn(x, z);
@@ -146,9 +160,14 @@ public final class Zone {
 
     @Override
     public String toString() {
-        String shape = isPolygon()
-            ? polygon.size() + "-point polygon, y " + minY + " -> " + maxY
-            : minX + "," + minY + "," + minZ + " -> " + maxX + "," + maxY + "," + maxZ;
+        String shape;
+        if (band) {
+            shape = "band, y " + minY + " -> " + maxY;
+        } else if (isPolygon()) {
+            shape = polygon.size() + "-point polygon, y " + minY + " -> " + maxY;
+        } else {
+            shape = minX + "," + minY + "," + minZ + " -> " + maxX + "," + maxY + "," + maxZ;
+        }
         return name + " [" + dimension + "] " + shape
             + " (combat=" + flagCombatOnEnter + " noSpawn=" + suppressNaturalSpawns
             + " blastShield=" + blockExplosionShield + ")";

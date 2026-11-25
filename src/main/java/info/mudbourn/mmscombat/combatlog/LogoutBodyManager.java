@@ -78,8 +78,10 @@ public final class LogoutBodyManager {
         body.setProfile(ResolvableProfile.createResolved(player.getGameProfile()));
         body.setImmovable(true);
         body.setNoGravity(true);
-        body.setHideDescription(true);
+        body.setDescription(Component.literal("Combat Logged Player"));
         body.addTag(BODY_TAG);
+        // Random Mob Sizes skips entities with this tag.
+        body.addTag("global.ignore");
         for (EquipmentSlot slot : VISIBLE_SLOTS) {
             body.setItemSlot(slot, LoadoutChoices.fairCopy(player.getUUID(), player.getItemBySlot(slot)));
         }

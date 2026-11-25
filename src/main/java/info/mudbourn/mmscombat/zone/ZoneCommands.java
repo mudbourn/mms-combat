@@ -51,6 +51,11 @@ public final class ZoneCommands {
                     .then(Commands.argument("minY", IntegerArgumentType.integer())
                         .then(Commands.argument("maxY", IntegerArgumentType.integer())
                             .executes(ZoneCommands::addPolyZone)))))
+            .then(Commands.literal("band")
+                .then(Commands.argument("name", StringArgumentType.word())
+                    .then(Commands.argument("minY", IntegerArgumentType.integer())
+                        .then(Commands.argument("maxY", IntegerArgumentType.integer())
+                            .executes(ZoneCommands::addBandZone)))))
             .then(Commands.literal("point")
                 .then(Commands.argument("name", StringArgumentType.word())
                     .suggests(ZONE_NAMES)
@@ -92,6 +97,20 @@ public final class ZoneCommands {
         return 1;
     }
 
+    private static int addBandZone(CommandContext<CommandSourceStack> ctx) {
+        String name = StringArgumentType.getString(ctx, "name");
+        int minY = IntegerArgumentType.getInteger(ctx, "minY");
+        int maxY = IntegerArgumentType.getInteger(ctx, "maxY");
+        String dimension = ctx.getSource().getLevel().dimension().identifier().toString();
+        Zone zone = Zone.band(name, dimension, minY, maxY);
+        if (!ZoneStore.add(zone)) {
+            ctx.getSource().sendFailure(Component.literal("A zone named " + name + " already exists."));
+            return 0;
+        }
+        ctx.getSource().sendSuccess(() -> Component.literal("Added zone " + zone), true);
+        return 1;
+    }
+
     private static int addPolyZone(CommandContext<CommandSourceStack> ctx) {
         String name = StringArgumentType.getString(ctx, "name");
         int minY = IntegerArgumentType.getInteger(ctx, "minY");
@@ -122,6 +141,10 @@ public final class ZoneCommands {
         Zone zone = ZoneStore.byName(name);
         if (zone == null) {
             ctx.getSource().sendFailure(Component.literal("No zone named " + name + "."));
+            return 0;
+        }
+        if (zone.band) {
+            ctx.getSource().sendFailure(Component.literal(name + " is a band zone and takes no edge points."));
             return 0;
         }
         zone.addPoint(pos.getX(), pos.getZ());
@@ -196,7 +219,7 @@ public final class ZoneCommands {
         BlockPos origin = BlockPos.containing(ctx.getSource().getPosition());
         int shown = 0;
         for (Zone zone : ZoneStore.all()) {
-            if (zone.inDimension(level.dimension()) && nearOrigin(zone, origin)) {
+            if (!zone.band && zone.inDimension(level.dimension()) && nearOrigin(zone, origin)) {
                 outline(level, zone);
                 shown++;
             }

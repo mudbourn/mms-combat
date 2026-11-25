@@ -5,12 +5,15 @@ import info.mudbourn.mmscombat.killstreak.StreakManager;
 import info.mudbourn.mmscombat.net.CombatStatePayload;
 import info.mudbourn.mmscombat.registry.MmsCombatRegistries;
 import info.mudbourn.mmscombat.zone.ZoneStore;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Predicate;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
@@ -39,6 +42,8 @@ public final class CombatManager {
     private final Set<UUID> persistentCombat = new HashSet<>();
     private final LogoutBodyManager bodies = new LogoutBodyManager();
     private final Set<UUID> inZoneLastTick = new HashSet<>();
+    private final List<Predicate<ServerPlayer>> pvpOverrides = new ArrayList<>();
+    private final List<Predicate<ServerPlayer>> logoutBodyVetoes = new ArrayList<>();
 
     // Scoreboard team whose only job is to paint a flagged player's nametag red.
     private static final String COMBAT_TEAM = "mms_combat";
@@ -95,9 +100,36 @@ public final class CombatManager {
         return true;
     }
 
-    // Whether a player has opted into PvP with the toggle or is standing in a combat zone.
+    // Whether a player has opted into PvP with the toggle, is standing in a combat zone, or is forced on by another mod.
     public boolean isPvpEnabled(ServerPlayer player) {
-        return persistentCombat.contains(player.getUUID()) || inFlaggingZone(player);
+        return persistentCombat.contains(player.getUUID())
+            || inFlaggingZone(player)
+            || anyMatch(pvpOverrides, player);
+    }
+
+    /**
+     * Adds a check that forces a player's PvP on while it returns true, whatever
+     * their own toggle says. Call it once at mod init.
+     */
+    public void addPvpOverride(Predicate<ServerPlayer> override) {
+        pvpOverrides.add(override);
+    }
+
+    /**
+     * Adds a check that stops a flagged player from leaving a logout body when
+     * they disconnect while it returns true. Call it once at mod init.
+     */
+    public void addLogoutBodyVeto(Predicate<ServerPlayer> veto) {
+        logoutBodyVetoes.add(veto);
+    }
+
+    private static boolean anyMatch(List<Predicate<ServerPlayer>> checks, ServerPlayer player) {
+        for (Predicate<ServerPlayer> check : checks) {
+            if (check.test(player)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private void onDamaged(ServerPlayer victim, net.minecraft.world.entity.Entity attacker) {
@@ -191,7 +223,7 @@ public final class CombatManager {
         inZoneLastTick.remove(player.getUUID());
         Long deadline = deadlines.remove(player.getUUID());
         forgetSentState(player.getUUID());
-        if (!flagged) {
+        if (!flagged || anyMatch(logoutBodyVetoes, player)) {
             return;
         }
         // A timed fight leaves a body for the full linger; a manual PvP hold leaves a short one so persistent loggers are still vulnerable on logout.
