@@ -1,5 +1,6 @@
 package info.mudbourn.mmscombat;
 
+import info.mudbourn.mmscombat.roll.RollTuning;
 import info.mudbourn.mmscombat.combatlog.CombatManager;
 import info.mudbourn.mmscombat.combatlog.LoadoutChoices;
 import info.mudbourn.mmscombat.config.CombatConfig;
@@ -14,6 +15,7 @@ import info.mudbourn.mmscombat.dummy.TrainingDummy;
 import info.mudbourn.mmscombat.registry.MmsCombatRegistries;
 import info.mudbourn.mmscombat.zone.ZoneStore;
 import net.fabricmc.api.ModInitializer;
+import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
@@ -30,6 +32,9 @@ public class MmsCombat implements ModInitializer {
         CombatConfig.load();
         MmsCombatRegistries.register();
         TrainingDummy.register();
+        if (FabricLoader.getInstance().isModLoaded("combat_roll")) {
+            RollTuning.register();
+        }
         PayloadTypeRegistry.clientboundPlay().register(CombatStatePayload.TYPE, CombatStatePayload.CODEC);
         PayloadTypeRegistry.clientboundPlay().register(LoadoutPromptPayload.TYPE, LoadoutPromptPayload.CODEC);
         PayloadTypeRegistry.serverboundPlay().register(LoadoutChoicePayload.TYPE, LoadoutChoicePayload.CODEC);

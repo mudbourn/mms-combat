@@ -1,0 +1,16 @@
+{
+  "required": false,
+  "package": "info.mudbourn.mmscombat.roll.mixin",
+  "compatibilityLevel": "JAVA_25",
+  "plugin": "info.mudbourn.mmscombat.roll.mixin.RollMixinGate",
+  "mixins": [
+    "RollAimMixin",
+    "RollDurationMixin"
+  ],
+  "client": [
+    "RollActionsMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

@@ -47,6 +47,8 @@ dependencies {
     implementation "info.mudbourn:mms-render-common:${project.render_common_version}"
     // The Training Dummy registers its head hitbox with mms-weapons headshots.
     implementation "info.mudbourn:mms-weapons:${project.weapons_version}"
+    // Combat Roll, whose roll this mod lengthens and opens up.
+    compileOnly files("libs/26.3/combat_roll-fabric-3.0.1+26.3.jar")
     // Mods whose weapon models, tags or ids this mod overrides or references, loaded at runtime only.
     runtimeMods files(
         "libs/26.3/aerialhell-0.7.9_fabric26.3.jar",

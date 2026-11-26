@@ -16,7 +16,8 @@
   "mixins": [
     "mms_combat.zone.mixins.json",
     "mms_combat.pvp.mixins.json",
-    "mms_combat.dummy.mixins.json"
+    "mms_combat.dummy.mixins.json",
+    "mms_combat.roll.mixins.json"
   ],
   "accessWidener": "mms_combat.accesswidener",
   "depends": {
