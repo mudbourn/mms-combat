@@ -14,6 +14,8 @@ public final class RollTuning {
     public static final int ROLL_TICKS = 14;
     // Spread added to a projectile fired mid-roll.
     public static final float ROLL_INACCURACY = 8.0f;
+    // Step height while rolling.
+    public static final float ROLL_STEP_HEIGHT = 1.0f;
     private static final Map<UUID, Long> STARTED_AT = new ConcurrentHashMap<>();
 
     private RollTuning() {

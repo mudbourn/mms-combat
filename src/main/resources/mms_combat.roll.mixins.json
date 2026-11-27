@@ -5,10 +5,13 @@
   "plugin": "info.mudbourn.mmscombat.roll.mixin.RollMixinGate",
   "mixins": [
     "RollAimMixin",
-    "RollDurationMixin"
+    "RollDurationMixin",
+    "RollStepUpMixin"
   ],
   "client": [
-    "RollActionsMixin"
+    "RollActionsMixin",
+    "RollAnytimeMixin",
+    "RollKeepsSwingMixin"
   ],
   "injectors": {
     "defaultRequire": 1
