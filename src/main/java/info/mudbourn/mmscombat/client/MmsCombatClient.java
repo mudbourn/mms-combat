@@ -22,7 +22,6 @@ public class MmsCombatClient implements ClientModInitializer {
             context.client().execute(() -> CombatHudState.update(
                 payload.inCombat(),
                 payload.secondsLeft(),
-                payload.inZone(),
                 payload.streak(),
                 payload.decaySeconds())));
         ClientPlayNetworking.registerGlobalReceiver(LoadoutPromptPayload.TYPE, (payload, context) ->

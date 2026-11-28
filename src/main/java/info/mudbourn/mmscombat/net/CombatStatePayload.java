@@ -7,8 +7,8 @@ import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.Identifier;
 
-// Server to client: the player's current combat flag, the seconds left on it, whether a combat zone holds them, their current killstreak, and the seconds until that streak decays, driving the HUD indicator.
-public record CombatStatePayload(boolean inCombat, int secondsLeft, boolean inZone, int streak, int decaySeconds)
+// Server to client: the player's current combat flag, the seconds left on it (-1 while held on), their current killstreak, and the seconds until that streak decays, driving the HUD indicator.
+public record CombatStatePayload(boolean inCombat, int secondsLeft, int streak, int decaySeconds)
     implements CustomPacketPayload {
 
     public static final Type<CombatStatePayload> TYPE =
@@ -19,8 +19,6 @@ public record CombatStatePayload(boolean inCombat, int secondsLeft, boolean inZo
         CombatStatePayload::inCombat,
         ByteBufCodecs.VAR_INT,
         CombatStatePayload::secondsLeft,
-        ByteBufCodecs.BOOL,
-        CombatStatePayload::inZone,
         ByteBufCodecs.VAR_INT,
         CombatStatePayload::streak,
         ByteBufCodecs.VAR_INT,

@@ -10,7 +10,7 @@ import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 
-// Draws the in-combat dagger sprite and the remaining-seconds text above the hotbar while the client is flagged.
+// Draws the PvP sword sprite above the hotbar while PvP is held on, or the seconds left in its place while it counts down.
 public final class CombatHudRenderer implements HudElement {
 
     public static final Identifier ID = Identifier.fromNamespaceAndPath(MmsCombat.MOD_ID, "combat_indicator");
@@ -49,6 +49,13 @@ public final class CombatHudRenderer implements HudElement {
         if (!CombatHudState.inCombat()) {
             return;
         }
+        int seconds = CombatHudState.secondsLeft();
+        if (seconds >= 0) {
+            String text = seconds + "s";
+            int textY = iconY + ICON_SIZE / 2 - font.lineHeight / 2;
+            context.text(font, Component.literal(text), screenWidth / 2 - font.width(text) / 2, textY, TEXT_COLOR, true);
+            return;
+        }
         context.blit(
             RenderPipelines.GUI_TEXTURED,
             SPRITE,
@@ -62,16 +69,5 @@ public final class CombatHudRenderer implements HudElement {
             SOURCE_SIZE,
             SOURCE_SIZE,
             SOURCE_SIZE);
-
-        Component label;
-        if (CombatHudState.inZone()) {
-            label = Component.literal("In Combat Zone");
-        } else if (CombatHudState.secondsLeft() < 0) {
-            label = Component.literal("PvP On");
-        } else {
-            label = Component.literal(CombatHudState.secondsLeft() + "s");
-        }
-        int textY = iconY + ICON_SIZE / 2 - font.lineHeight / 2;
-        context.text(font, label, textX, textY, TEXT_COLOR, true);
     }
 }

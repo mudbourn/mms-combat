@@ -174,7 +174,7 @@ public final class CombatManager {
             LoadoutChoices.prompt(player);
         }
         syncCombatTeam(player);
-        sendState(player, true, combatSeconds(player), hudZone(player, inFlaggingZone(player)));
+        sendState(player, true, combatSeconds(player));
     }
 
     public boolean isFlagged(ServerPlayer player) {
@@ -200,7 +200,7 @@ public final class CombatManager {
         }
         forgetSentState(player.getUUID());
         syncCombatTeam(player);
-        sendState(player, isFlagged(player), combatSeconds(player), hudZone(player, inFlaggingZone(player)));
+        sendState(player, isFlagged(player), combatSeconds(player));
     }
 
     // The countdown to show: the persistent hold takes priority over any timer, then the ticking deadline, then nothing.
@@ -225,7 +225,7 @@ public final class CombatManager {
             forgetSentState(player.getUUID());
             playCombatSound(player, MmsCombatRegistries.COMBAT_END);
             syncCombatTeam(player);
-            sendState(player, false, 0, false);
+            sendState(player, false, 0);
         }
     }
 
@@ -234,7 +234,7 @@ public final class CombatManager {
             forgetSentState(player.getUUID());
             playCombatSound(player, MmsCombatRegistries.COMBAT_END);
             syncCombatTeam(player);
-            sendState(player, false, 0, false);
+            sendState(player, false, 0);
         }
     }
 
@@ -285,7 +285,7 @@ public final class CombatManager {
             } else {
                 expireIfDue(player);
             }
-            refreshHud(player, inZone);
+            refreshHud(player);
         }
     }
 
@@ -369,7 +369,7 @@ public final class CombatManager {
             if (!quiet) {
                 playCombatSound(player, MmsCombatRegistries.COMBAT_END);
             }
-            sendState(player, false, 0, false);
+            sendState(player, false, 0);
         }
     }
 
@@ -379,16 +379,8 @@ public final class CombatManager {
             && ZoneStore.flagsCombatOnEntry(level, player.blockPosition());
     }
 
-    // Pushes an update only when the displayed content changes: the combat flag, its countdown, the zone hold, the streak, or the streak's decay countdown.
-    // The zone state the HUD shows: while a zone notice is held back, the HUD keeps showing what the last notice said,
-    // so the indicator settles at the same moment as the chat notice instead of flickering along a border.
-    private boolean hudZone(ServerPlayer player, boolean inZone) {
-        Boolean shown = noticeShown.get(player.getUUID());
-        return noticeHeldSince.containsKey(player.getUUID()) && shown != null ? shown : inZone;
-    }
-
-    private void refreshHud(ServerPlayer player, boolean actualZone) {
-        boolean inZone = hudZone(player, actualZone);
+    // Pushes an update only when the displayed content changes: the combat flag, its countdown, the streak, or the streak's decay countdown.
+    private void refreshHud(ServerPlayer player) {
         syncCombatTeam(player);
         boolean inCombat = isFlagged(player);
         int seconds = combatSeconds(player);
@@ -398,11 +390,10 @@ public final class CombatManager {
         boolean changed = last == null
             || last.inCombat() != inCombat
             || last.seconds() != seconds
-            || last.inZone() != inZone
             || last.streak() != streak
             || last.decay() != decay;
         if (changed) {
-            sendState(player, inCombat, seconds, inZone, streak, decay);
+            sendState(player, inCombat, seconds, streak, decay);
         }
     }
 
@@ -452,22 +443,21 @@ public final class CombatManager {
             player.level().getRandom().nextLong()));
     }
 
-    private void sendState(ServerPlayer player, boolean inCombat, int seconds, boolean inZone) {
+    private void sendState(ServerPlayer player, boolean inCombat, int seconds) {
         sendState(
             player,
             inCombat,
             seconds,
-            inZone,
             StreakManager.get().getStreak(player),
             StreakManager.get().decaySecondsLeft(player));
     }
 
-    private void sendState(ServerPlayer player, boolean inCombat, int seconds, boolean inZone, int streak, int decay) {
-        lastSent.put(player.getUUID(), new HudSnapshot(inCombat, seconds, inZone, streak, decay));
-        ServerPlayNetworking.send(player, new CombatStatePayload(inCombat, seconds, inZone, streak, decay));
+    private void sendState(ServerPlayer player, boolean inCombat, int seconds, int streak, int decay) {
+        lastSent.put(player.getUUID(), new HudSnapshot(inCombat, seconds, streak, decay));
+        ServerPlayNetworking.send(player, new CombatStatePayload(inCombat, seconds, streak, decay));
     }
 
     // The HUD content last sent to a player, compared each tick so unchanged state is never resent.
-    private record HudSnapshot(boolean inCombat, int seconds, boolean inZone, int streak, int decay) {
+    private record HudSnapshot(boolean inCombat, int seconds, int streak, int decay) {
     }
 }
